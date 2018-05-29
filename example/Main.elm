@@ -2,7 +2,8 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
-import Keyboard exposing (Key(..))
+import Keyboard exposing (Key(..), RawKey)
+import Keyboard.Arrows
 import Style
 
 
@@ -18,7 +19,7 @@ to do anything special in the update.
 
 -}
 type alias Model =
-    { pressedKeys : List Key
+    { pressedKeys : List RawKey
     }
 
 
@@ -44,13 +45,15 @@ view : Model -> Html msg
 view model =
     let
         shiftPressed =
-            List.member Shift model.pressedKeys
+            model.pressedKeys
+                |> List.filterMap Keyboard.modifierKey
+                |> List.member Shift
 
         arrows =
-            Keyboard.arrows model.pressedKeys
+            Keyboard.Arrows.arrows model.pressedKeys
 
         wasd =
-            Keyboard.wasd model.pressedKeys
+            Keyboard.Arrows.wasd model.pressedKeys
     in
     div Style.container
         [ text ("Shift: " ++ Debug.toString shiftPressed)

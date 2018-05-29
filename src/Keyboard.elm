@@ -3,7 +3,9 @@ module Keyboard
         ( Key(..)
         , KeyChange(..)
         , Msg
+        , RawKey
         , characterKey
+        , clears
         , downs
         , mediaKey
         , modifierKey
@@ -91,11 +93,20 @@ ups toMsg =
     Browser.onDocument "keyup" (eventKeyDecoder |> Json.map toMsg)
 
 
+{-| Subscription for window blur events. In the "Msg and Update" way I use this to clear out all
+"stuck-down" keys.
+-}
+clears : msg -> Sub msg
+clears msg =
+    Browser.onWindow "blur" (Json.succeed msg)
+
+
 {-| `Keyboard`'s internal message type.
 -}
 type Msg
     = Down RawKey
     | Up RawKey
+    | Clear
 
 
 {-| The subscriptions needed for the "Msg and Update" way.
@@ -105,6 +116,7 @@ subscriptions =
     Sub.batch
         [ downs Down
         , ups Up
+        , clears Clear
         ]
 
 
@@ -132,6 +144,9 @@ update msg state =
 
         Up key ->
             remove key state
+
+        Clear ->
+            []
 
 
 {-| The second value `updateWithKeyChange` may return, representing the actual
@@ -184,6 +199,9 @@ updateWithKeyChange msg state =
                         Nothing
             in
             ( nextState, change )
+
+        Clear ->
+            ( [], Nothing )
 
 
 
@@ -342,7 +360,7 @@ anyKeyWith fns key =
                     a
 
                 Nothing ->
-                    anyKey rest key
+                    anyKeyWith rest key
 
 
 {-| Returns the character that was pressed.

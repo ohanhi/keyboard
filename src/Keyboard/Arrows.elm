@@ -1,4 +1,4 @@
-module Arrows
+module Keyboard.Arrows
     exposing
         ( Arrows
         , Direction(..)
@@ -14,7 +14,7 @@ module Arrows
 
 -}
 
-import Keyboard exposing (Key(..))
+import Keyboard exposing (Key(..), RawKey)
 
 
 {-| Record type used for `arrows` and `wasd`.
@@ -28,19 +28,20 @@ type alias Arrows =
 
     arrows []                      --> { x = 0, y = 0 }
 
-    arrows [ ArrowLeft ]           --> { x = -1, y = 0 }
+    arrows [ "ArrowLeft" ]           --> { x = -1, y = 0 }
 
-    arrows [ ArrowUp, ArrowRight ] --> { x = 1, y = 1 }
+    arrows [ "ArrowUp", "ArrowRight" ] --> { x = 1, y = 1 }
 
-    arrows [ ArrowDown, ArrowLeft, ArrowRight ]
+    arrows [ "ArrowDown", "ArrowLeft", "ArrowRight" ]
                                    --> { x = 0, y = -1 }
 
 -}
-arrows : List Key -> Arrows
+arrows : List RawKey -> Arrows
 arrows keys =
     let
         toInt key =
             keys
+                |> List.filterMap Keyboard.navigationKey
                 |> List.member key
                 |> boolToInt
 
@@ -55,28 +56,33 @@ arrows keys =
 
 {-| Similar to `arrows`, gives the W, A, S and D keys' pressed down state.
 
-    wasd []                       --> { x = 0, y = 0 }
+    wasd []
+    --> { x = 0, y = 0 }
 
-    wasd [ CharA ]                --> { x = -1, y = 0 }
+    wasd [ "A" ]
+    --> { x = -1, y = 0 }
 
-    wasd [ CharW, CharD ]         --> { x = 1, y = 1 }
+    wasd [ "W", "D" ]
+    --> { x = 1, y = 1 }
 
-    wasd [ CharA, CharS, CharD ]  --> { x = 0, y = -1 }
+    wasd [ "A", "S", "D" ]
+    --> { x = 0, y = -1 }
 
 -}
-wasd : List Key -> Arrows
+wasd : List RawKey -> Arrows
 wasd keys =
     let
         toInt key =
             keys
+                |> List.map (Keyboard.rawValue >> String.toUpper)
                 |> List.member key
                 |> boolToInt
 
         x =
-            toInt CharD - toInt CharA
+            toInt "D" - toInt "A"
 
         y =
-            toInt CharW - toInt CharS
+            toInt "W" - toInt "S"
     in
     { x = x, y = y }
 
@@ -97,33 +103,40 @@ type Direction
 
 {-| Gives the arrow keys' pressed down state as follows:
 
-    arrowsDirection []                      --> NoDirection
+    arrowsDirection []
+    --> NoDirection
 
-    arrowsDirection [ ArrowLeft ]           --> West
+    arrowsDirection [ "ArrowLeft" ]
+    --> West
 
-    arrowsDirection [ ArrowUp, ArrowRight ] --> NorthEast
+    arrowsDirection [ "ArrowUp", "ArrowRight" ]
+    --> NorthEast
 
-    arrowsDirection [ ArrowDown, ArrowLeft, ArrowRight ]
-                                            --> South
+    arrowsDirection [ "ArrowDown", "ArrowLeft", "ArrowRight" ]
+    --> South
 
 -}
-arrowsDirection : List Key -> Direction
+arrowsDirection : List RawKey -> Direction
 arrowsDirection =
     arrowsToDir << arrows
 
 
 {-| Similar to `arrows`, gives the W, A, S and D keys' pressed down state.
 
-    wasdDirection []                      --> NoDirection
+    wasdDirection []
+    --> NoDirection
 
-    wasdDirection [ CharA ]               --> West
+    wasdDirection [ "A" ]
+    --> West
 
-    wasdDirection [ CharW, CharD ]        --> NorthEast
+    wasdDirection [ "W", "D" ]
+    --> NorthEast
 
-    wasdDirection [ CharA, CharS, CharD ] --> South
+    wasdDirection [ "A", "S", "D" ]
+    --> South
 
 -}
-wasdDirection : List Key -> Direction
+wasdDirection : List RawKey -> Direction
 wasdDirection =
     arrowsToDir << wasd
 
