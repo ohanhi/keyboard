@@ -2,6 +2,7 @@ module Keyboard.Arrows
     exposing
         ( Arrows
         , Direction(..)
+        , arrowKey
         , arrows
         , arrowsDirection
         , wasd
@@ -14,7 +15,7 @@ module Keyboard.Arrows
 
 -}
 
-import Keyboard exposing (Key(..))
+import Keyboard exposing (Key(..), RawKey)
 
 
 {-| Record type used for `arrows` and `wasd`.
@@ -22,6 +23,55 @@ Both `x` and `y` can range from `-1` to `1`, and are `0` if no keys are pressed.
 -}
 type alias Arrows =
     { x : Int, y : Int }
+
+
+{-| Converts a `RawKey` if it is one of the Arrow keys or W, A, S, D.
+
+<key>ArrowLeft</key> -> `Just ArrowLeft`
+
+<key>A</key> -> `Character A`
+
+<key>B</key> -> `Character B`
+
+-}
+arrowKey : RawKey -> Maybe Key
+arrowKey rawKey =
+    case Keyboard.rawValue rawKey of
+        -- Navigation
+        "ArrowDown" ->
+            Just ArrowDown
+
+        "ArrowLeft" ->
+            Just ArrowLeft
+
+        "ArrowRight" ->
+            Just ArrowRight
+
+        "ArrowUp" ->
+            Just ArrowUp
+
+        "Down" ->
+            Just ArrowDown
+
+        "Left" ->
+            Just ArrowLeft
+
+        "Right" ->
+            Just ArrowRight
+
+        "Up" ->
+            Just ArrowUp
+
+        other ->
+            let
+                lower =
+                    String.toLower other
+            in
+            if lower == "w" || lower == "a" || lower == "s" || lower == "d" then
+                Just (Character other)
+
+            else
+                Nothing
 
 
 {-| Gives the arrow keys' pressed down state as follows:
