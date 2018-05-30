@@ -44,16 +44,24 @@ update msg model =
 view : Model -> Html msg
 view model =
     let
-        shiftPressed =
+        keys =
             model.pressedKeys
-                |> List.filterMap Keyboard.modifierKey
-                |> List.member Shift
+                |> List.map
+                    (Keyboard.anyKeyWith
+                        [ Keyboard.modifierKey
+                        , Keyboard.navigationKey
+                        , Keyboard.characterKey
+                        ]
+                    )
+
+        shiftPressed =
+            List.member Shift keys
 
         arrows =
-            Keyboard.Arrows.arrows model.pressedKeys
+            Keyboard.Arrows.arrows keys
 
         wasd =
-            Keyboard.Arrows.wasd model.pressedKeys
+            Keyboard.Arrows.wasd keys
     in
     div Style.container
         [ text ("Shift: " ++ Debug.toString shiftPressed)

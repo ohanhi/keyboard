@@ -4,6 +4,8 @@ module Keyboard
         , KeyChange(..)
         , Msg
         , RawKey
+        , anyKey
+        , anyKeyWith
         , characterKey
         , clears
         , downs
@@ -106,7 +108,7 @@ clears msg =
 type Msg
     = Down RawKey
     | Up RawKey
-    | Clear
+    | ClearKeys
 
 
 {-| The subscriptions needed for the "Msg and Update" way.
@@ -116,16 +118,16 @@ subscriptions =
     Sub.batch
         [ downs Down
         , ups Up
-        , clears Clear
+        , clears ClearKeys
         ]
 
 
-insert : RawKey -> List RawKey -> List RawKey
+insert : a -> List a -> List a
 insert key list =
     key :: remove key list
 
 
-remove : RawKey -> List RawKey -> List RawKey
+remove : a -> List a -> List a
 remove key list =
     List.filter ((/=) key) list
 
@@ -145,7 +147,7 @@ update msg state =
         Up key ->
             remove key state
 
-        Clear ->
+        ClearKeys ->
             []
 
 
@@ -200,7 +202,7 @@ updateWithKeyChange msg state =
             in
             ( nextState, change )
 
-        Clear ->
+        ClearKeys ->
             ( [], Nothing )
 
 

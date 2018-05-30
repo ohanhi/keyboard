@@ -14,7 +14,7 @@ module Keyboard.Arrows
 
 -}
 
-import Keyboard exposing (Key(..), RawKey)
+import Keyboard exposing (Key(..))
 
 
 {-| Record type used for `arrows` and `wasd`.
@@ -28,20 +28,19 @@ type alias Arrows =
 
     arrows []                      --> { x = 0, y = 0 }
 
-    arrows [ "ArrowLeft" ]           --> { x = -1, y = 0 }
+    arrows [ ArrowLeft ]           --> { x = -1, y = 0 }
 
-    arrows [ "ArrowUp", "ArrowRight" ] --> { x = 1, y = 1 }
+    arrows [ ArrowUp, ArrowRight ] --> { x = 1, y = 1 }
 
-    arrows [ "ArrowDown", "ArrowLeft", "ArrowRight" ]
+    arrows [ ArrowDown, ArrowLeft, ArrowRight ]
                                    --> { x = 0, y = -1 }
 
 -}
-arrows : List RawKey -> Arrows
+arrows : List Key -> Arrows
 arrows keys =
     let
         toInt key =
             keys
-                |> List.filterMap Keyboard.navigationKey
                 |> List.member key
                 |> boolToInt
 
@@ -59,30 +58,28 @@ arrows keys =
     wasd []
     --> { x = 0, y = 0 }
 
-    wasd [ "A" ]
+    wasd [ Character "A" ]
     --> { x = -1, y = 0 }
 
-    wasd [ "W", "D" ]
+    wasd [ Character "W", Character "D" ]
     --> { x = 1, y = 1 }
 
-    wasd [ "A", "S", "D" ]
+    wasd [ Character "A", Character "S", Character "D" ]
     --> { x = 0, y = -1 }
 
 -}
-wasd : List RawKey -> Arrows
+wasd : List Key -> Arrows
 wasd keys =
     let
-        toInt key =
-            keys
-                |> List.map (Keyboard.rawValue >> String.toUpper)
-                |> List.member key
-                |> boolToInt
+        toInt char1 char2 =
+            boolToInt
+                (List.member (Character char1) keys || List.member (Character char2) keys)
 
         x =
-            toInt "D" - toInt "A"
+            toInt "D" "d" - toInt "A" "a"
 
         y =
-            toInt "W" - toInt "S"
+            toInt "W" "w" - toInt "S" "s"
     in
     { x = x, y = y }
 
@@ -106,17 +103,17 @@ type Direction
     arrowsDirection []
     --> NoDirection
 
-    arrowsDirection [ "ArrowLeft" ]
+    arrowsDirection [ ArrowLeft ]
     --> West
 
-    arrowsDirection [ "ArrowUp", "ArrowRight" ]
+    arrowsDirection [ ArrowUp, ArrowRight ]
     --> NorthEast
 
-    arrowsDirection [ "ArrowDown", "ArrowLeft", "ArrowRight" ]
+    arrowsDirection [ ArrowDown, ArrowLeft, ArrowRight ]
     --> South
 
 -}
-arrowsDirection : List RawKey -> Direction
+arrowsDirection : List Key -> Direction
 arrowsDirection =
     arrowsToDir << arrows
 
@@ -126,17 +123,17 @@ arrowsDirection =
     wasdDirection []
     --> NoDirection
 
-    wasdDirection [ "A" ]
+    wasdDirection [ Character "A" ]
     --> West
 
-    wasdDirection [ "W", "D" ]
+    wasdDirection [ Character "W", Character "D" ]
     --> NorthEast
 
-    wasdDirection [ "A", "S", "D" ]
+    wasdDirection [ Character "A", Character "S", Character "D" ]
     --> South
 
 -}
-wasdDirection : List RawKey -> Direction
+wasdDirection : List Key -> Direction
 wasdDirection =
     arrowsToDir << wasd
 
