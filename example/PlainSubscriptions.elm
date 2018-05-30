@@ -15,6 +15,7 @@ subscriptions model =
     Sub.batch
         [ Keyboard.downs KeyDown
         , Keyboard.ups KeyUp
+        , Keyboard.clears ClearKeys
         ]
 
 
@@ -31,6 +32,7 @@ main =
 type Msg
     = KeyDown RawKey
     | KeyUp RawKey
+    | ClearKeys
 
 
 type alias Model =
@@ -55,6 +57,9 @@ update msg model =
 
                 KeyDown key ->
                     "↧ down: " ++ Debug.toString (Keyboard.anyKey key)
+
+                ClearKeys ->
+                    "↯ Clear!"
     in
     ( { model | events = event :: model.events }
     , Cmd.none
