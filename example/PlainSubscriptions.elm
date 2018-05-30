@@ -2,7 +2,7 @@ module PlainSubscriptions exposing (..)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
-import Keyboard exposing (Key)
+import Keyboard exposing (RawKey)
 import Style
 
 
@@ -29,8 +29,8 @@ main =
 
 
 type Msg
-    = KeyDown Key
-    | KeyUp Key
+    = KeyDown RawKey
+    | KeyUp RawKey
 
 
 type alias Model =
@@ -47,7 +47,16 @@ init =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( { model | events = Debug.toString msg :: model.events }
+    let
+        event =
+            case msg of
+                KeyUp key ->
+                    "↥ up: " ++ Debug.toString (Keyboard.anyKey key)
+
+                KeyDown key ->
+                    "↧ down: " ++ Debug.toString (Keyboard.anyKey key)
+    in
+    ( { model | events = event :: model.events }
     , Cmd.none
     )
 
