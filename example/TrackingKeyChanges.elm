@@ -2,7 +2,7 @@ module TrackingKeyChanges exposing (..)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
-import Keyboard exposing (Key(..))
+import Keyboard exposing (Key(..), KeyChange(..), RawKey)
 import Style
 
 
@@ -39,7 +39,7 @@ update msg model =
         KeyboardMsg keyMsg ->
             let
                 ( pressedKeys, maybeKeyChange ) =
-                    Keyboard.updateWithKeyChange keyMsg model.pressedKeys
+                    Keyboard.updateWithKeyChange Keyboard.anyKey keyMsg model.pressedKeys
 
                 keyChanges =
                     case maybeKeyChange of
@@ -68,7 +68,19 @@ view model =
 keysView : Model -> Html msg
 keysView model =
     model.keyChanges
-        |> List.map (\change -> li [] [ text (Debug.toString change) ])
+        |> List.map
+            (\change ->
+                let
+                    content =
+                        case change of
+                            KeyUp key ->
+                                "↥ up: " ++ Debug.toString key
+
+                            KeyDown key ->
+                                "↧ down: " ++ Debug.toString key
+                in
+                li [] [ text content ]
+            )
         |> ul []
 
 

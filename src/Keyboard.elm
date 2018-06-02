@@ -1,22 +1,25 @@
 module Keyboard
     exposing
-        ( Arrows
-        , Direction(..)
-        , Key(..)
+        ( Key(..)
         , KeyChange(..)
+        , KeyParser
         , Msg
-        , arrows
-        , arrowsDirection
+        , RawKey
+        , anyKey
+        , characterKey
+        , clears
         , downs
-        , fromCode
+        , mediaKey
+        , modifierKey
+        , navigationKey
+        , oneOf
+        , phoneKey
+        , rawValue
         , subscriptions
-        , targetKey
-        , toCode
         , update
         , updateWithKeyChange
         , ups
-        , wasd
-        , wasdDirection
+        , whitespaceKey
         )
 
 {-| Convenience helpers for working with keyboard inputs.
@@ -30,13 +33,6 @@ Use either this approach, or the plain subscriptions and handle the state yourse
 @docs Msg, subscriptions, update, updateWithKeyChange, KeyChange
 
 
-## Helpers
-
-> **Note:** To find out if a key is being pressed, simply use `List.member key keyList`.
-
-@docs Arrows, arrows, wasd, Direction, arrowsDirection, wasdDirection
-
-
 # Plain Subscriptions
 
 If you prefer to only get "the facts" and do your own handling, use these
@@ -45,14 +41,9 @@ subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 @docs downs, ups
 
 
-# Decoder
-
-@docs targetKey
-
-
 # Low level
 
-@docs fromCode, toCode
+@docs rawValue
 
 
 # Keyboard keys
@@ -66,13 +57,31 @@ import Dict exposing (Dict)
 import Json.Decode as Json
 
 
-type alias KeyCode =
-    Int
+{-| An unprocessed key value.
+
+Use a `KeyParser` to turn it into something useful.
+
+-}
+type RawKey
+    = RawKey String
 
 
-keyCodeDecoder : Json.Decoder KeyCode
-keyCodeDecoder =
-    Json.field "keyCode" Json.int
+{-| A key parser can turn `RawKey`s into meaningful `Key`s for your program.
+-}
+type alias KeyParser =
+    RawKey -> Maybe Key
+
+
+{-| Get the original string value of the `RawKey`.
+-}
+rawValue : RawKey -> String
+rawValue (RawKey key) =
+    key
+
+
+eventKeyDecoder : Json.Decoder RawKey
+eventKeyDecoder =
+    Json.field "key" (Json.string |> Json.map RawKey)
 
 
 {-| Subscription for key down events.
@@ -81,30 +90,32 @@ keyCodeDecoder =
 these messages before the corresponding key up message.
 
 -}
-downs : (Key -> msg) -> Sub msg
+downs : (RawKey -> msg) -> Sub msg
 downs toMsg =
-    Browser.onDocument "keydown" (keyCodeDecoder |> Json.map (fromCode >> toMsg))
+    Browser.onDocument "keydown" (eventKeyDecoder |> Json.map toMsg)
 
 
 {-| Subscription for key up events.
 -}
-ups : (Key -> msg) -> Sub msg
+ups : (RawKey -> msg) -> Sub msg
 ups toMsg =
-    Browser.onDocument "keyup" (keyCodeDecoder |> Json.map (fromCode >> toMsg))
+    Browser.onDocument "keyup" (eventKeyDecoder |> Json.map toMsg)
+
+
+{-| Subscription for window blur events. In the "Msg and Update" way I use this to clear out all
+"stuck-down" keys.
+-}
+clears : msg -> Sub msg
+clears msg =
+    Browser.onWindow "blur" (Json.succeed msg)
 
 
 {-| `Keyboard`'s internal message type.
 -}
 type Msg
-    = Down Key
-    | Up Key
-
-
-{-| Record type used for `arrows` and `wasd`.
-Both `x` and `y` can range from `-1` to `1`, and are `0` if no keys are pressed.
--}
-type alias Arrows =
-    { x : Int, y : Int }
+    = Down RawKey
+    | Up RawKey
+    | ClearKeys
 
 
 {-| The subscriptions needed for the "Msg and Update" way.
@@ -114,20 +125,28 @@ subscriptions =
     Sub.batch
         [ downs Down
         , ups Up
+        , clears ClearKeys
         ]
 
 
-insert : Key -> List Key -> List Key
-insert code list =
-    list
-        |> remove code
-        |> (::) code
+insert : KeyParser -> RawKey -> List Key -> List Key
+insert keyParser rawKey list =
+    case keyParser rawKey of
+        Just key ->
+            key :: List.filter ((/=) key) list
+
+        Nothing ->
+            list
 
 
-remove : Key -> List Key -> List Key
-remove code list =
-    list
-        |> List.filter ((/=) code)
+remove : KeyParser -> RawKey -> List Key -> List Key
+remove keyParser rawKey list =
+    case keyParser rawKey of
+        Just key ->
+            List.filter ((/=) key) list
+
+        Nothing ->
+            list
 
 
 {-| Use this (or `updateWithKeyChange`) to have the list of keys update.
@@ -136,14 +155,17 @@ _If you need to know exactly what changed just now, have a look
 at `updateWithKeyChange`._
 
 -}
-update : Msg -> List Key -> List Key
-update msg state =
+update : KeyParser -> Msg -> List Key -> List Key
+update keyParser msg state =
     case msg of
         Down key ->
-            insert key state
+            insert keyParser key state
 
         Up key ->
-            remove key state
+            remove keyParser key state
+
+        ClearKeys ->
+            []
 
 
 {-| The second value `updateWithKeyChange` may return, representing the actual
@@ -159,24 +181,25 @@ keys in fact change just now?"
 
 You might be wondering why this is a `Maybe KeyChange` &ndash; it's because
 `keydown` events happen many times per second when you hold down a key. Thus,
-not all incoming messages actually cause a change in the model.
+not all incoming messages actually cause a change in the model. Also, you will
+only get updates for the keys that match your `KeyParser`.
 
 **Note** This is provided for convenience, and may not perform well in real
 programs. If you are experiencing slowness or jittering when using
 `updateWithKeyChange`, see if the regular `update` makes it go away.
 
 -}
-updateWithKeyChange : Msg -> List Key -> ( List Key, Maybe KeyChange )
-updateWithKeyChange msg state =
+updateWithKeyChange : KeyParser -> Msg -> List Key -> ( List Key, Maybe KeyChange )
+updateWithKeyChange keyParser msg state =
     case msg of
         Down key ->
             let
                 nextState =
-                    insert key state
+                    insert keyParser key state
 
                 change =
                     if List.length nextState /= List.length state then
-                        Just (KeyDown key)
+                        Maybe.map KeyDown (keyParser key)
 
                     else
                         Nothing
@@ -186,305 +209,77 @@ updateWithKeyChange msg state =
         Up key ->
             let
                 nextState =
-                    remove key state
+                    remove keyParser key state
 
                 change =
                     if List.length nextState /= List.length state then
-                        Just (KeyUp key)
+                        Maybe.map KeyUp (keyParser key)
 
                     else
                         Nothing
             in
             ( nextState, change )
 
+        ClearKeys ->
+            ( [], Nothing )
 
-{-| Gives the arrow keys' pressed down state as follows:
 
-    arrows []                      --> { x = 0, y = 0 }
 
-    arrows [ ArrowLeft ]           --> { x = -1, y = 0 }
+{- A `Json.Decoder` for grabbing `event.keyCode` and turning it into a `Key`
 
-    arrows [ ArrowUp, ArrowRight ] --> { x = 1, y = 1 }
+       import Json.Decode as Json
 
-    arrows [ ArrowDown, ArrowLeft, ArrowRight ]
-                                   --> { x = 0, y = -1 }
+       onKey : (Key -> msg) -> Attribute msg
+       onKey tagger =
+           on "keydown" (Json.map tagger targetKey)
 
+   targetKey : Json.Decoder Key
+   targetKey =
+     Json.map fromCode (Json.field "keyCode" Json.int)
 -}
-arrows : List Key -> Arrows
-arrows keys =
-    let
-        toInt key =
-            keys
-                |> List.member key
-                |> boolToInt
-
-        x =
-            toInt ArrowRight - toInt ArrowLeft
-
-        y =
-            toInt ArrowUp - toInt ArrowDown
-    in
-    { x = x, y = y }
-
-
-{-| Similar to `arrows`, gives the W, A, S and D keys' pressed down state.
-
-    wasd []                       --> { x = 0, y = 0 }
-
-    wasd [ CharA ]                --> { x = -1, y = 0 }
-
-    wasd [ CharW, CharD ]         --> { x = 1, y = 1 }
-
-    wasd [ CharA, CharS, CharD ]  --> { x = 0, y = -1 }
-
--}
-wasd : List Key -> Arrows
-wasd keys =
-    let
-        toInt key =
-            keys
-                |> List.member key
-                |> boolToInt
-
-        x =
-            toInt CharD - toInt CharA
-
-        y =
-            toInt CharW - toInt CharS
-    in
-    { x = x, y = y }
-
-
-{-| Type representation of the arrows.
--}
-type Direction
-    = North
-    | NorthEast
-    | East
-    | SouthEast
-    | South
-    | SouthWest
-    | West
-    | NorthWest
-    | NoDirection
-
-
-{-| Gives the arrow keys' pressed down state as follows:
-
-    arrowsDirection []                      --> NoDirection
-
-    arrowsDirection [ ArrowLeft ]           --> West
-
-    arrowsDirection [ ArrowUp, ArrowRight ] --> NorthEast
-
-    arrowsDirection [ ArrowDown, ArrowLeft, ArrowRight ]
-                                            --> South
-
--}
-arrowsDirection : List Key -> Direction
-arrowsDirection =
-    arrowsToDir << arrows
-
-
-{-| Similar to `arrows`, gives the W, A, S and D keys' pressed down state.
-
-    wasdDirection []                      --> NoDirection
-
-    wasdDirection [ CharA ]               --> West
-
-    wasdDirection [ CharW, CharD ]        --> NorthEast
-
-    wasdDirection [ CharA, CharS, CharD ] --> South
-
--}
-wasdDirection : List Key -> Direction
-wasdDirection =
-    arrowsToDir << wasd
-
-
-arrowsToDir : Arrows -> Direction
-arrowsToDir { x, y } =
-    let
-        x1 =
-            x + 1
-
-        y1 =
-            y + 1
-    in
-    case ( x1, y1 ) of
-        ( 1, 2 ) ->
-            North
-
-        ( 2, 2 ) ->
-            NorthEast
-
-        ( 2, 1 ) ->
-            East
-
-        ( 2, 0 ) ->
-            SouthEast
-
-        ( 1, 0 ) ->
-            South
-
-        ( 0, 0 ) ->
-            SouthWest
-
-        ( 0, 1 ) ->
-            West
-
-        ( 0, 2 ) ->
-            NorthWest
-
-        _ ->
-            NoDirection
-
-
-{-| Convert a key code into a `Key`.
-
-    fromCode 13  --> Enter
-
--}
-fromCode : KeyCode -> Key
-fromCode code =
-    codeDict
-        |> Dict.get code
-        |> Maybe.withDefault Other
-
-
-{-| Convert a `Key` into a key code.
-
-    toCode Enter  --> 13
-
--}
-toCode : Key -> KeyCode
-toCode key =
-    codeBook
-        |> List.filter ((==) key << Tuple.second)
-        |> List.map Tuple.first
-        |> List.head
-        |> Maybe.withDefault 0
-
-
-{-| A `Json.Decoder` for grabbing `event.keyCode` and turning it into a `Key`
-
-    import Json.Decode as Json
-
-    onKey : (Key -> msg) -> Attribute msg
-    onKey tagger =
-        on "keydown" (Json.map tagger targetKey)
-
--}
-targetKey : Json.Decoder Key
-targetKey =
-    Json.map fromCode (Json.field "keyCode" Json.int)
-
-
-boolToInt : Bool -> Int
-boolToInt bool =
-    if bool then
-        1
-
-    else
-        0
 
 
 {-| These are all the keys that have names in `Keyboard`.
 -}
 type Key
-    = Cancel
-    | Help
-    | BackSpace
-    | Tab
-    | Clear
-    | Enter
-    | Shift
-    | Control
+    = Character String
     | Alt
-    | Pause
+    | AltGraph
     | CapsLock
-    | Escape
-    | Convert
-    | NonConvert
-    | Accept
-    | ModeChange
-    | Space
-    | PageUp
-    | PageDown
+    | Control
+    | Fn
+    | FnLock
+    | Hyper
+    | Meta
+    | NumLock
+    | ScrollLock
+    | Shift
+    | Super
+    | Symbol
+    | SymbolLock
+    | Enter
+    | Tab
+    | Spacebar
+    | ArrowDown
+    | ArrowLeft
+    | ArrowRight
+    | ArrowUp
     | End
     | Home
-    | ArrowLeft
-    | ArrowUp
-    | ArrowRight
-    | ArrowDown
-    | Select
-    | Print
-    | Execute
-    | PrintScreen
-    | Insert
+    | PageDown
+    | PageUp
+    | Backspace
+    | Clear
+    | Copy
+    | CrSel
+    | Cut
     | Delete
-    | Number0
-    | Number1
-    | Number2
-    | Number3
-    | Number4
-    | Number5
-    | Number6
-    | Number7
-    | Number8
-    | Number9
-    | Colon
-    | Semicolon
-    | LessThan
-    | Equals
-    | GreaterThan
-    | QuestionMark
-    | At
-    | CharA
-    | CharB
-    | CharC
-    | CharD
-    | CharE
-    | CharF
-    | CharG
-    | CharH
-    | CharI
-    | CharJ
-    | CharK
-    | CharL
-    | CharM
-    | CharN
-    | CharO
-    | CharP
-    | CharQ
-    | CharR
-    | CharS
-    | CharT
-    | CharU
-    | CharV
-    | CharW
-    | CharX
-    | CharY
-    | CharZ
-    | Super
-    | ContextMenu
-    | Sleep
-    | Numpad0
-    | Numpad1
-    | Numpad2
-    | Numpad3
-    | Numpad4
-    | Numpad5
-    | Numpad6
-    | Numpad7
-    | Numpad8
-    | Numpad9
-    | Multiply
-    | Add
-    | Separator
-    | Subtract
-    | Decimal
-    | Divide
+    | EraseEof
+    | ExSel
+    | Insert
+    | Paste
+    | Redo
+    | Undo
     | F1
     | F2
     | F3
@@ -505,203 +300,521 @@ type Key
     | F18
     | F19
     | F20
-    | F21
-    | F22
-    | F23
-    | F24
-    | NumLock
-    | ScrollLock
-    | Circumflex
-    | Exclamation
-    | DoubleQuote
-    | Hash
-    | Dollar
-    | Percent
-    | Ampersand
-    | Underscore
-    | OpenParen
-    | CloseParen
-    | Asterisk
-    | Plus
-    | Pipe
-    | HyphenMinus
-    | OpenCurlyBracket
-    | CloseCurlyBracket
-    | Tilde
-    | VolumeMute
-    | VolumeDown
-    | VolumeUp
-    | Comma
-    | Minus
-    | Period
-    | Slash
-    | BackQuote
-    | OpenBracket
-    | BackSlash
-    | CloseBracket
-    | Quote
-    | Meta
-    | Altgr
-    | Other
+    | Again
+    | Attn
+    | Cancel
+    | ContextMenu
+    | Escape
+    | Execute
+    | Find
+    | Finish
+    | Help
+    | Pause
+    | Play
+    | Props
+    | Select
+    | ZoomIn
+    | ZoomOut
+    | AppSwitch
+    | Call
+    | Camera
+    | CameraFocus
+    | EndCall
+    | GoBack
+    | GoHome
+    | HeadsetHook
+    | LastNumberRedial
+    | Notification
+    | MannerMode
+    | VoiceDial
+    | ChannelDown
+    | ChannelUp
+    | MediaFastForward
+    | MediaPause
+    | MediaPlay
+    | MediaPlayPause
+    | MediaRecord
+    | MediaRewind
+    | MediaStop
+    | MediaTrackNext
+    | MediaTrackPrevious
 
 
-codeDict : Dict KeyCode Key
-codeDict =
-    Dict.fromList codeBook
+{-| Turn any `RawKey` into a `Key` using all of the available processing functions
+(`modifierKey`, `whitespaceKey`, etc.)
+
+Use it in your config like so:
+
+    keyboardConfig =
+        { keyParser = Keyboard.anyKey
+        }
+
+**This might be slow!** If you only need e.g. arrow keys, you can use
+`navigationKey` instead.
+
+If the key doesn't match any of the categories, `Nothing` is returned.
+
+-}
+anyKey : KeyParser
+anyKey =
+    oneOf
+        [ characterKey
+        , modifierKey
+        , whitespaceKey
+        , navigationKey
+        , editingKey
+        , functionKey
+        , uiKey
+        , phoneKey
+        , mediaKey
+        ]
 
 
-codeBook : List ( KeyCode, Key )
-codeBook =
-    [ ( 3, Cancel )
-    , ( 6, Help )
-    , ( 8, BackSpace )
-    , ( 9, Tab )
-    , ( 12, Clear )
-    , ( 13, Enter )
-    , ( 16, Shift )
-    , ( 17, Control )
-    , ( 18, Alt )
-    , ( 19, Pause )
-    , ( 20, CapsLock )
-    , ( 27, Escape )
-    , ( 28, Convert )
-    , ( 29, NonConvert )
-    , ( 30, Accept )
-    , ( 31, ModeChange )
-    , ( 32, Space )
-    , ( 33, PageUp )
-    , ( 34, PageDown )
-    , ( 35, End )
-    , ( 36, Home )
-    , ( 37, ArrowLeft )
-    , ( 38, ArrowUp )
-    , ( 39, ArrowRight )
-    , ( 40, ArrowDown )
-    , ( 41, Select )
-    , ( 42, Print )
-    , ( 43, Execute )
-    , ( 44, PrintScreen )
-    , ( 45, Insert )
-    , ( 46, Delete )
-    , ( 48, Number0 )
-    , ( 49, Number1 )
-    , ( 50, Number2 )
-    , ( 51, Number3 )
-    , ( 52, Number4 )
-    , ( 53, Number5 )
-    , ( 54, Number6 )
-    , ( 55, Number7 )
-    , ( 56, Number8 )
-    , ( 57, Number9 )
-    , ( 58, Colon )
-    , ( 59, Semicolon )
-    , ( 60, LessThan )
-    , ( 61, Equals )
-    , ( 62, GreaterThan )
-    , ( 63, QuestionMark )
-    , ( 64, At )
-    , ( 65, CharA )
-    , ( 66, CharB )
-    , ( 67, CharC )
-    , ( 68, CharD )
-    , ( 69, CharE )
-    , ( 70, CharF )
-    , ( 71, CharG )
-    , ( 72, CharH )
-    , ( 73, CharI )
-    , ( 74, CharJ )
-    , ( 75, CharK )
-    , ( 76, CharL )
-    , ( 77, CharM )
-    , ( 78, CharN )
-    , ( 79, CharO )
-    , ( 80, CharP )
-    , ( 81, CharQ )
-    , ( 82, CharR )
-    , ( 83, CharS )
-    , ( 84, CharT )
-    , ( 85, CharU )
-    , ( 86, CharV )
-    , ( 87, CharW )
-    , ( 88, CharX )
-    , ( 89, CharY )
-    , ( 90, CharZ )
-    , ( 91, Super )
-    , ( 93, ContextMenu )
-    , ( 95, Sleep )
-    , ( 96, Numpad0 )
-    , ( 97, Numpad1 )
-    , ( 98, Numpad2 )
-    , ( 99, Numpad3 )
-    , ( 100, Numpad4 )
-    , ( 101, Numpad5 )
-    , ( 102, Numpad6 )
-    , ( 103, Numpad7 )
-    , ( 104, Numpad8 )
-    , ( 105, Numpad9 )
-    , ( 106, Multiply )
-    , ( 107, Add )
-    , ( 108, Separator )
-    , ( 109, Subtract )
-    , ( 110, Decimal )
-    , ( 111, Divide )
-    , ( 112, F1 )
-    , ( 113, F2 )
-    , ( 114, F3 )
-    , ( 115, F4 )
-    , ( 116, F5 )
-    , ( 117, F6 )
-    , ( 118, F7 )
-    , ( 119, F8 )
-    , ( 120, F9 )
-    , ( 121, F10 )
-    , ( 122, F11 )
-    , ( 123, F12 )
-    , ( 124, F13 )
-    , ( 125, F14 )
-    , ( 126, F15 )
-    , ( 127, F16 )
-    , ( 128, F17 )
-    , ( 129, F18 )
-    , ( 130, F19 )
-    , ( 131, F20 )
-    , ( 132, F21 )
-    , ( 133, F22 )
-    , ( 134, F23 )
-    , ( 135, F24 )
-    , ( 144, NumLock )
-    , ( 145, ScrollLock )
-    , ( 160, Circumflex )
-    , ( 161, Exclamation )
-    , ( 162, DoubleQuote )
-    , ( 163, Hash )
-    , ( 164, Dollar )
-    , ( 165, Percent )
-    , ( 166, Ampersand )
-    , ( 167, Underscore )
-    , ( 168, OpenParen )
-    , ( 169, CloseParen )
-    , ( 170, Asterisk )
-    , ( 171, Plus )
-    , ( 172, Pipe )
-    , ( 173, HyphenMinus )
-    , ( 174, OpenCurlyBracket )
-    , ( 175, CloseCurlyBracket )
-    , ( 176, Tilde )
-    , ( 181, VolumeMute )
-    , ( 182, VolumeDown )
-    , ( 183, VolumeUp )
-    , ( 186, Semicolon )
-    , ( 187, Equals )
-    , ( 188, Comma )
-    , ( 189, Minus )
-    , ( 190, Period )
-    , ( 191, Slash )
-    , ( 192, BackQuote )
-    , ( 219, OpenBracket )
-    , ( 220, BackSlash )
-    , ( 221, CloseBracket )
-    , ( 222, Quote )
-    , ( 224, Meta )
-    , ( 225, Altgr )
-    ]
+{-| Turn any `RawKey` into a `Key` using the processing functions (`modifierKey`, `whitespaceKey`,
+etc.) provided. If the key doesn't match any of the categories, `Nothing` is returned.
+-}
+oneOf : List KeyParser -> KeyParser
+oneOf fns key =
+    case fns of
+        [] ->
+            Nothing
+
+        fn :: rest ->
+            case fn key of
+                Just a ->
+                    Just a
+
+                Nothing ->
+                    oneOf rest key
+
+
+{-| Returns the character that was pressed.
+
+**NOTE** There is no reasonable way of actually telling if a certain key is a character or not.
+For now at least, consider this a Western language focused "best guess".
+
+Examples on a US layout:
+
+<key>A</key> -> `Just (Character "a")`
+
+<key>Shift</key> + <key>A</key> -> Just (Character "A")
+
+<key>Shift</key> + <key>1</key> -> Just (Character "!")
+
+<key>Shift</key> -> Nothing
+
+-}
+characterKey : KeyParser
+characterKey (RawKey value) =
+    if String.length value == 1 then
+        Just (Character value)
+
+    else
+        Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [modifier keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Modifier_keys).
+
+<key>Alt</key> -> `Just Alt`
+
+<key>Tab</key> -> `Nothing`
+
+-}
+modifierKey : KeyParser
+modifierKey (RawKey value) =
+    case value of
+        -- Modifiers
+        "Alt" ->
+            Just Alt
+
+        "AltGraph" ->
+            Just AltGraph
+
+        "CapsLock" ->
+            Just CapsLock
+
+        "Control" ->
+            Just Control
+
+        "Fn" ->
+            Just Fn
+
+        "FnLock" ->
+            Just FnLock
+
+        "Hyper" ->
+            Just Hyper
+
+        "Meta" ->
+            Just Meta
+
+        "NumLock" ->
+            Just NumLock
+
+        "ScrollLock" ->
+            Just ScrollLock
+
+        "Shift" ->
+            Just Shift
+
+        "Super" ->
+            Just Super
+
+        -- Firefox
+        "OS" ->
+            Just Super
+
+        "Symbol" ->
+            Just Symbol
+
+        "SymbolLock" ->
+            Just SymbolLock
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [whitespace keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Whitespace_keys).
+
+<key>Tab</key> -> `Just Tab`
+
+<key>Alt</key> -> `Nothing`
+
+-}
+whitespaceKey : KeyParser
+whitespaceKey (RawKey value) =
+    case value of
+        -- Whitespace
+        "Enter" ->
+            Just Enter
+
+        "Tab" ->
+            Just Tab
+
+        "Spacebar" ->
+            Just Spacebar
+
+        " " ->
+            Just Spacebar
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [navigation keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Navigation_keys).
+
+<key>ArrowLeft</key> -> `Just ArrowLeft`
+
+<key>A</key> -> `Nothing`
+
+-}
+navigationKey : KeyParser
+navigationKey (RawKey value) =
+    case value of
+        -- Navigation
+        "ArrowDown" ->
+            Just ArrowDown
+
+        "ArrowLeft" ->
+            Just ArrowLeft
+
+        "ArrowRight" ->
+            Just ArrowRight
+
+        "ArrowUp" ->
+            Just ArrowUp
+
+        "Down" ->
+            Just ArrowDown
+
+        "Left" ->
+            Just ArrowLeft
+
+        "Right" ->
+            Just ArrowRight
+
+        "Up" ->
+            Just ArrowUp
+
+        "End" ->
+            Just End
+
+        "Home" ->
+            Just Home
+
+        "PageDown" ->
+            Just PageDown
+
+        "PageUp" ->
+            Just PageUp
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [editing keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Editing_keys).
+
+<key>Backspace</key> -> `Just Backspace`
+
+<key>Enter</key> -> `Nothing`
+
+-}
+editingKey : KeyParser
+editingKey (RawKey value) =
+    case value of
+        "Backspace" ->
+            Just Backspace
+
+        "Clear" ->
+            Just Clear
+
+        "Copy" ->
+            Just Copy
+
+        "CrSel" ->
+            Just CrSel
+
+        "Cut" ->
+            Just Cut
+
+        "Delete" ->
+            Just Delete
+
+        "EraseEof" ->
+            Just EraseEof
+
+        "ExSel" ->
+            Just ExSel
+
+        "Insert" ->
+            Just Insert
+
+        "Paste" ->
+            Just Paste
+
+        "Redo" ->
+            Just Redo
+
+        "Undo" ->
+            Just Undo
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [function keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Function_keys).
+
+<key>F4</key> -> `Just F4`
+
+<key>6</key> -> `Nothing`
+
+-}
+functionKey : KeyParser
+functionKey (RawKey value) =
+    case value of
+        "F1" ->
+            Just F1
+
+        "F2" ->
+            Just F2
+
+        "F3" ->
+            Just F3
+
+        "F4" ->
+            Just F4
+
+        "F5" ->
+            Just F5
+
+        "F6" ->
+            Just F6
+
+        "F7" ->
+            Just F7
+
+        "F8" ->
+            Just F8
+
+        "F9" ->
+            Just F9
+
+        "F10" ->
+            Just F10
+
+        "F11" ->
+            Just F11
+
+        "F12" ->
+            Just F12
+
+        "F13" ->
+            Just F13
+
+        "F14" ->
+            Just F14
+
+        "F15" ->
+            Just F15
+
+        "F16" ->
+            Just F16
+
+        "F17" ->
+            Just F17
+
+        "F18" ->
+            Just F18
+
+        "F19" ->
+            Just F19
+
+        "F20" ->
+            Just F20
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [UI keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#UI_keys).
+-}
+uiKey : KeyParser
+uiKey (RawKey value) =
+    case value of
+        -- UI
+        "Again" ->
+            Just Again
+
+        "Attn" ->
+            Just Attn
+
+        "Cancel" ->
+            Just Cancel
+
+        "ContextMenu" ->
+            Just ContextMenu
+
+        "Escape" ->
+            Just Escape
+
+        "Execute" ->
+            Just Execute
+
+        "Find" ->
+            Just Find
+
+        "Finish" ->
+            Just Finish
+
+        "Help" ->
+            Just Help
+
+        "Pause" ->
+            Just Pause
+
+        "Play" ->
+            Just Play
+
+        "Props" ->
+            Just Props
+
+        "Select" ->
+            Just Select
+
+        "ZoomIn" ->
+            Just ZoomIn
+
+        "ZoomOut" ->
+            Just ZoomOut
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [phone keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Phone_keys).
+-}
+phoneKey : KeyParser
+phoneKey (RawKey value) =
+    case value of
+        -- Phone
+        "AppSwitch" ->
+            Just AppSwitch
+
+        "Call" ->
+            Just Call
+
+        "Camera" ->
+            Just Camera
+
+        "CameraFocus" ->
+            Just CameraFocus
+
+        "EndCall" ->
+            Just EndCall
+
+        "GoBack" ->
+            Just GoBack
+
+        "GoHome" ->
+            Just GoHome
+
+        "HeadsetHook" ->
+            Just HeadsetHook
+
+        "LastNumberRedial" ->
+            Just LastNumberRedial
+
+        "Notification" ->
+            Just Notification
+
+        "MannerMode" ->
+            Just MannerMode
+
+        "VoiceDial" ->
+            Just VoiceDial
+
+        _ ->
+            Nothing
+
+
+{-| Converts a `RawKey` if it is one of the [media keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Media_keys).
+-}
+mediaKey : KeyParser
+mediaKey (RawKey value) =
+    case value of
+        -- Media
+        "ChannelDown" ->
+            Just ChannelDown
+
+        "ChannelUp" ->
+            Just ChannelUp
+
+        "MediaFastForward" ->
+            Just MediaFastForward
+
+        "MediaPause" ->
+            Just MediaPause
+
+        "MediaPlay" ->
+            Just MediaPlay
+
+        "MediaPlayPause" ->
+            Just MediaPlayPause
+
+        "MediaRecord" ->
+            Just MediaRecord
+
+        "MediaRewind" ->
+            Just MediaRewind
+
+        "MediaStop" ->
+            Just MediaStop
+
+        "MediaTrackNext" ->
+            Just MediaTrackNext
+
+        "MediaTrackPrevious" ->
+            Just MediaTrackPrevious
+
+        _ ->
+            Nothing

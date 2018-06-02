@@ -3,6 +3,7 @@ module Main exposing (..)
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
 import Keyboard exposing (Key(..))
+import Keyboard.Arrows
 import Style
 
 
@@ -22,6 +23,15 @@ type alias Model =
     }
 
 
+keyParser : Keyboard.KeyParser
+keyParser =
+    Keyboard.oneOf
+        [ Keyboard.modifierKey
+        , Keyboard.navigationKey
+        , Keyboard.characterKey
+        ]
+
+
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { pressedKeys = [] }
@@ -34,7 +44,7 @@ update msg model =
     case msg of
         KeyboardMsg keyMsg ->
             ( { model
-                | pressedKeys = Keyboard.update keyMsg model.pressedKeys
+                | pressedKeys = Keyboard.update keyParser keyMsg model.pressedKeys
               }
             , Cmd.none
             )
@@ -47,10 +57,10 @@ view model =
             List.member Shift model.pressedKeys
 
         arrows =
-            Keyboard.arrows model.pressedKeys
+            Keyboard.Arrows.arrows model.pressedKeys
 
         wasd =
-            Keyboard.wasd model.pressedKeys
+            Keyboard.Arrows.wasd model.pressedKeys
     in
     div Style.container
         [ text ("Shift: " ++ Debug.toString shiftPressed)
