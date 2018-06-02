@@ -33,11 +33,11 @@ type alias Arrows =
 
 {-| A key parser for just the Arrow keys and W, A, S, D.
 
-<key>ArrowLeft</key> -> `Just ArrowLeft`
+[ArrowLeft] -> `Just ArrowLeft`
 
-<key>A</key> -> `Character A`
+[A] -> `Character "a"`
 
-<key>B</key> -> `Nothing`
+[B] -> `Nothing`
 
 -}
 arrowKey : KeyParser

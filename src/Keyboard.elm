@@ -416,13 +416,13 @@ For now at least, consider this a Western language focused "best guess".
 
 Examples on a US layout:
 
-<key>A</key> -> `Just (Character "a")`
+[A] -> `Just (Character "a")`
 
-<key>Shift</key> + <key>A</key> -> Just (Character "A")
+[Shift] + [A] -> `Just (Character "A")`
 
-<key>Shift</key> + <key>1</key> -> Just (Character "!")
+[Shift] + [1] -> `Just (Character "!")`
 
-<key>Shift</key> -> Nothing
+[Shift] -> `Nothing`
 
 -}
 characterKey : KeyParser
@@ -436,9 +436,9 @@ characterKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [modifier keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Modifier_keys).
 
-<key>Alt</key> -> `Just Alt`
+[Alt] -> `Just Alt`
 
-<key>Tab</key> -> `Nothing`
+[Tab] -> `Nothing`
 
 -}
 modifierKey : KeyParser
@@ -497,9 +497,9 @@ modifierKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [whitespace keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Whitespace_keys).
 
-<key>Tab</key> -> `Just Tab`
+[Tab] -> `Just Tab`
 
-<key>Alt</key> -> `Nothing`
+[Alt] -> `Nothing`
 
 -}
 whitespaceKey : KeyParser
@@ -524,9 +524,9 @@ whitespaceKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [navigation keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Navigation_keys).
 
-<key>ArrowLeft</key> -> `Just ArrowLeft`
+[ArrowLeft] -> `Just ArrowLeft`
 
-<key>A</key> -> `Nothing`
+[A] -> `Nothing`
 
 -}
 navigationKey : KeyParser
@@ -575,9 +575,9 @@ navigationKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [editing keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Editing_keys).
 
-<key>Backspace</key> -> `Just Backspace`
+[Backspace] -> `Just Backspace`
 
-<key>Enter</key> -> `Nothing`
+[Enter] -> `Nothing`
 
 -}
 editingKey : KeyParser
@@ -625,9 +625,9 @@ editingKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [function keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Function_keys).
 
-<key>F4</key> -> `Just F4`
+[F4] -> `Just F4`
 
-<key>6</key> -> `Nothing`
+[6] -> `Nothing`
 
 -}
 functionKey : KeyParser
