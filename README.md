@@ -8,33 +8,29 @@ You can use `ohanhi/keyboard` in two ways:
 2. The "Plain Subscriptions" way, where you get subscriptions for keys' down and up events, and handle the rest on your own.
 
 
-## Full examples you can run and play with on Ellie
+## Full examples
 
-- [Main example](https://ellie-app.com/35nXQ7RH9Pfa1/1) shows most of the basic usage
-- [Arrows Direction example](https://ellie-app.com/35nZJ9mySNja1/1) shows how the `North`, `NorthEast`, etc. directions work
-- [Tracking Key Changes example](https://ellie-app.com/35p38pmpWHda1/0) uses `updateWithKeyChange` to show when a key is pressed down and when it is released
-- [Plain Subscriptions example](https://ellie-app.com/35p4fKmqrtwa1/0) is for the more experienced Elm users, who wish to get more "down to the metal" with just subscribing to keyboard events
-
-All of the examples are also in the `example` directory in the repository.
+All of the examples are in the [`example` directory](https://github.com/ohanhi/keyboard/tree/master/example) in the repository.
 
 
 ## Msg and Update
 
 If you use the "Msg and Update" way, you will get the most help, such as:
 
-- All keyboard keys are named values of the `Key` type, such as `ArrowUp`, `CharA` and `Enter`
+- All keyboard keys are named values of the `Key` type, such as `ArrowUp`, `Character "A"` and `Enter`
 - You can find out whether e.g. `Shift` is pressed down when any kind of a `Msg` happens in your program
 - Arrow keys and WASD can be used as `{ x : Int, y : Int }` or as a union type (e.g. `South`, `NorthEast`)
 - You can also get a full list of keys that are pressed down
 
-When using Keyboard like this, it follows The Elm Architecture. Its model is a list of keys, and it has an `update` function and some `subscriptions`. Below are the necessary parts to wire things up. Once that is done, you can get useful information using the helper functions such as [`arrows`](http://package.elm-lang.org/packages/ohanhi/keyboard/latest/Keyboard#arrows) and [`arrowsDirection`](http://package.elm-lang.org/packages/ohanhi/keyboard/latest/Keyboard#arrowsDirection).
+When using Keyboard like this, it follows The Elm Architecture. Its model is a list of keys, and it has an `update` function and some `subscriptions`. Below are the necessary parts to wire things up. Once that is done, you can use the list of keys in your program as you like. You can also get useful information using the helper functions such as [`arrows`](http://package.elm-lang.org/packages/ohanhi/keyboard/latest/Keyboard-Arrows#arrows) and [`arrowsDirection`](http://package.elm-lang.org/packages/ohanhi/keyboard/latest/Keyboard-Arrows#arrowsDirection).
 
 ------
 
 Include the list of keys in your program's model
 
 ```elm
-import Keyboard exposing (Key)
+import Keyboard exposing (Key(..))
+import Keyboard.Arrows
 
 type alias Model =
     { pressedKeys : List Key
@@ -92,14 +88,14 @@ calculateSpeed : Model -> Float
 calculateSpeed model =
     let
         arrows =
-            Keyboard.arrows model.pressedKeys
+            Keyboard.Arrows.arrows model.pressedKeys
     in
         model.currentSpeed + arrows.x
 
 
 isShooting : Model -> Bool
 isShooting model =
-    List.member Space model.pressedKeys
+    List.member Spacebar model.pressedKeys
 ```
 
 
@@ -107,21 +103,24 @@ Have fun! :)
 
 ---
 
-**PS.** The [Tracking Key Changes example](https://ellie-app.com/tYS3vBzTTTa1/0) example shows how to use `updateWithKeyChange` to find out exactly which key was pressed down / released on that update cycle.
+**PS.** The [Tracking Key Changes example](https://github.com/ohanhi/keyboard/blob/master/example/TrackingKeyChanges.elm) example shows how to use `updateWithKeyChange` to find out exactly which key was pressed down / released on that update cycle.
 
 
 ## Plain Subscriptions
 
 With the "plain subscriptions" way, you get the bare minimum:
 
-- All keyboard keys are named values of the `Key` type, such as `ArrowUp`, `CharA` and `Enter`
+- All keyboard keys are named values of the `Key` type, such as `ArrowUp`, `Character "A"` and `Enter`
 
 Setting up is very straight-forward:
 
 ```elm
+import Keyboard exposing (RawKey)
+
 type Msg
-    = KeyDown Key
-    | KeyUp Key
+    = KeyDown RawKey
+    | KeyUp RawKey
+    | ClearKeys
     -- ...
 
 
@@ -130,8 +129,11 @@ subscriptions model =
     Sub.batch
         [ Keyboard.downs KeyDown
         , Keyboard.ups KeyUp
+        , Keyboard.clears ClearKeys
         -- ...
         ]
 ```
+
+Note that you will probably want to use one of the `KeyParser`s (or many with `oneOf`) in your update.
 
 There's an example for this, too: [Plain Subscriptions](https://github.com/ohanhi/keyboard/blob/master/example/PlainSubscriptions.elm)

@@ -9,6 +9,8 @@ module Keyboard
         , characterKey
         , clears
         , downs
+        , editingKey
+        , functionKey
         , mediaKey
         , modifierKey
         , navigationKey
@@ -18,6 +20,7 @@ module Keyboard
         , subscriptions
         , update
         , updateWithKeyChange
+        , updateWithParser
         , ups
         , whitespaceKey
         )
@@ -30,7 +33,24 @@ module Keyboard
 Using Keyboard this way, you get all the help it can provide.
 Use either this approach, or the plain subscriptions and handle the state yourself.
 
-@docs Msg, subscriptions, update, updateWithKeyChange, KeyChange
+@docs Msg, subscriptions, update
+
+
+## More advanced
+
+@docs updateWithParser, KeyChange, updateWithKeyChange
+
+
+# Key parsers
+
+@docs RawKey, KeyParser
+
+@docs anyKey, characterKey, modifierKey, whitespaceKey, navigationKey, editingKey, functionKey, phoneKey, mediaKey
+
+
+## Combining key parsers
+
+@docs oneOf
 
 
 # Plain Subscriptions
@@ -38,7 +58,7 @@ Use either this approach, or the plain subscriptions and handle the state yourse
 If you prefer to only get "the facts" and do your own handling, use these
 subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 
-@docs downs, ups
+@docs downs, ups, clears
 
 
 # Low level
@@ -149,14 +169,26 @@ remove keyParser rawKey list =
             list
 
 
-{-| Use this (or `updateWithKeyChange`) to have the list of keys update.
+{-| Use this to have the list of keys update.
 
-_If you need to know exactly what changed just now, have a look
-at `updateWithKeyChange`._
+This will give you all the keys I can recognize.
+
+If you encounter sluggish performance and need to optimize your program, try `updateWithParser`.
+
+If you need to know exactly what changed just now, have a look
+at `updateWithKeyChange`.
 
 -}
-update : KeyParser -> Msg -> List Key -> List Key
-update keyParser msg state =
+update : Msg -> List Key -> List Key
+update =
+    updateWithParser anyKey
+
+
+{-| A more advanced version of `update`. Provide it with a smaller `KeyParser` than `anyKey` and
+it will perform a little bit faster.
+-}
+updateWithParser : KeyParser -> Msg -> List Key -> List Key
+updateWithParser keyParser msg state =
     case msg of
         Down key ->
             insert keyParser key state
@@ -183,10 +215,6 @@ You might be wondering why this is a `Maybe KeyChange` &ndash; it's because
 `keydown` events happen many times per second when you hold down a key. Thus,
 not all incoming messages actually cause a change in the model. Also, you will
 only get updates for the keys that match your `KeyParser`.
-
-**Note** This is provided for convenience, and may not perform well in real
-programs. If you are experiencing slowness or jittering when using
-`updateWithKeyChange`, see if the regular `update` makes it go away.
 
 -}
 updateWithKeyChange : KeyParser -> Msg -> List Key -> ( List Key, Maybe KeyChange )
@@ -340,8 +368,7 @@ type Key
     | MediaTrackPrevious
 
 
-{-| Turn any `RawKey` into a `Key` using all of the available processing functions
-(`modifierKey`, `whitespaceKey`, etc.)
+{-| This parser tries to match with all the keys I can recognize.
 
 Use it in your config like so:
 

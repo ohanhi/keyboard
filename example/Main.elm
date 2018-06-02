@@ -23,15 +23,6 @@ type alias Model =
     }
 
 
-keyParser : Keyboard.KeyParser
-keyParser =
-    Keyboard.oneOf
-        [ Keyboard.modifierKey
-        , Keyboard.navigationKey
-        , Keyboard.characterKey
-        ]
-
-
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { pressedKeys = [] }
@@ -44,7 +35,7 @@ update msg model =
     case msg of
         KeyboardMsg keyMsg ->
             ( { model
-                | pressedKeys = Keyboard.update keyParser keyMsg model.pressedKeys
+                | pressedKeys = Keyboard.update keyMsg model.pressedKeys
               }
             , Cmd.none
             )

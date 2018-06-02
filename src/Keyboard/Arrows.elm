@@ -11,7 +11,7 @@ module Keyboard.Arrows
 
 {-| Arrow keys and WASD get special treatment using the functions in this module. This is particularly useful for games.
 
-@docs Arrows, arrows, wasd, Direction, arrowsDirection, wasdDirection
+@docs Arrows, arrows, wasd, Direction, arrowsDirection, wasdDirection, arrowKey
 
 -}
 
@@ -20,18 +20,24 @@ import Keyboard exposing (Key(..), KeyParser, RawKey)
 
 {-| Record type used for `arrows` and `wasd`.
 Both `x` and `y` can range from `-1` to `1`, and are `0` if no keys are pressed.
+
+For example:
+
+  - `{ x = 1, y = 0 }` means to the right
+  - `{ x = 0, y = -1 }` means down
+
 -}
 type alias Arrows =
     { x : Int, y : Int }
 
 
-{-| Converts a `RawKey` if it is one of the Arrow keys or W, A, S, D.
+{-| A key parser for just the Arrow keys and W, A, S, D.
 
 <key>ArrowLeft</key> -> `Just ArrowLeft`
 
 <key>A</key> -> `Character A`
 
-<key>B</key> -> `Character B`
+<key>B</key> -> `Nothing`
 
 -}
 arrowKey : KeyParser
