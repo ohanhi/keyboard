@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
-import Keyboard exposing (Key(..), RawKey)
+import Keyboard exposing (Key(..))
 import Keyboard.Arrows
 import Style
 
@@ -19,8 +19,17 @@ to do anything special in the update.
 
 -}
 type alias Model =
-    { pressedKeys : List RawKey
+    { pressedKeys : List Key
     }
+
+
+keyParser : Keyboard.KeyParser
+keyParser =
+    Keyboard.oneOf
+        [ Keyboard.modifierKey
+        , Keyboard.navigationKey
+        , Keyboard.characterKey
+        ]
 
 
 init : () -> ( Model, Cmd Msg )
@@ -35,7 +44,7 @@ update msg model =
     case msg of
         KeyboardMsg keyMsg ->
             ( { model
-                | pressedKeys = Keyboard.update keyMsg model.pressedKeys
+                | pressedKeys = Keyboard.update keyParser keyMsg model.pressedKeys
               }
             , Cmd.none
             )
@@ -44,24 +53,14 @@ update msg model =
 view : Model -> Html msg
 view model =
     let
-        keys =
-            model.pressedKeys
-                |> List.map
-                    (Keyboard.anyKeyWith
-                        [ Keyboard.modifierKey
-                        , Keyboard.navigationKey
-                        , Keyboard.characterKey
-                        ]
-                    )
-
         shiftPressed =
-            List.member Shift keys
+            List.member Shift model.pressedKeys
 
         arrows =
-            Keyboard.Arrows.arrows keys
+            Keyboard.Arrows.arrows model.pressedKeys
 
         wasd =
-            Keyboard.Arrows.wasd keys
+            Keyboard.Arrows.wasd model.pressedKeys
     in
     div Style.container
         [ text ("Shift: " ++ Debug.toString shiftPressed)

@@ -3,7 +3,7 @@ module VisualArrows exposing (..)
 import Browser
 import Html exposing (Html, div, p, text)
 import Html.Attributes exposing (style)
-import Keyboard exposing (RawKey)
+import Keyboard exposing (Key)
 import Keyboard.Arrows exposing (Direction(..))
 import Style
 
@@ -23,7 +23,7 @@ type Msg
 
 
 type alias Model =
-    { pressedKeys : List RawKey
+    { pressedKeys : List Key
     }
 
 
@@ -39,7 +39,7 @@ update msg model =
     case msg of
         KeyboardMsg keyMsg ->
             ( { model
-                | pressedKeys = Keyboard.update keyMsg model.pressedKeys
+                | pressedKeys = Keyboard.update Keyboard.Arrows.arrowKey keyMsg model.pressedKeys
               }
             , Cmd.none
             )
@@ -48,15 +48,11 @@ update msg model =
 view : Model -> Html msg
 view model =
     let
-        keys =
-            model.pressedKeys
-                |> List.filterMap Keyboard.Arrows.arrowKey
-
         arrows =
-            Keyboard.Arrows.arrowsDirection keys
+            Keyboard.Arrows.arrowsDirection model.pressedKeys
 
         wasd =
-            Keyboard.Arrows.wasdDirection keys
+            Keyboard.Arrows.wasdDirection model.pressedKeys
     in
     div Style.container
         [ div []

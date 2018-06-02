@@ -21,7 +21,7 @@ type Msg
 
 
 type alias Model =
-    { pressedKeys : List RawKey
+    { pressedKeys : List Key
     , keyChanges : List Keyboard.KeyChange
     }
 
@@ -39,7 +39,7 @@ update msg model =
         KeyboardMsg keyMsg ->
             let
                 ( pressedKeys, maybeKeyChange ) =
-                    Keyboard.updateWithKeyChange keyMsg model.pressedKeys
+                    Keyboard.updateWithKeyChange Keyboard.anyKey keyMsg model.pressedKeys
 
                 keyChanges =
                     case maybeKeyChange of
@@ -74,10 +74,10 @@ keysView model =
                     content =
                         case change of
                             KeyUp key ->
-                                "↥ up: " ++ Debug.toString (Keyboard.anyKey key)
+                                "↥ up: " ++ Debug.toString key
 
                             KeyDown key ->
-                                "↧ down: " ++ Debug.toString (Keyboard.anyKey key)
+                                "↧ down: " ++ Debug.toString key
                 in
                 li [] [ text content ]
             )

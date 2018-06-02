@@ -15,7 +15,7 @@ module Keyboard.Arrows
 
 -}
 
-import Keyboard exposing (Key(..), RawKey)
+import Keyboard exposing (Key(..), KeyParser, RawKey)
 
 
 {-| Record type used for `arrows` and `wasd`.
@@ -34,7 +34,7 @@ type alias Arrows =
 <key>B</key> -> `Character B`
 
 -}
-arrowKey : RawKey -> Maybe Key
+arrowKey : KeyParser
 arrowKey rawKey =
     case Keyboard.rawValue rawKey of
         -- Navigation

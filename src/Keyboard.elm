@@ -2,16 +2,17 @@ module Keyboard
     exposing
         ( Key(..)
         , KeyChange(..)
+        , KeyParser
         , Msg
         , RawKey
         , anyKey
-        , anyKeyWith
         , characterKey
         , clears
         , downs
         , mediaKey
         , modifierKey
         , navigationKey
+        , oneOf
         , phoneKey
         , rawValue
         , subscriptions
@@ -58,11 +59,17 @@ import Json.Decode as Json
 
 {-| An unprocessed key value.
 
-Use one of the `characterKey`, `modifierKey` etc. functions to turn it into something useful.
+Use a `KeyParser` to turn it into something useful.
 
 -}
 type RawKey
     = RawKey String
+
+
+{-| A key parser can turn `RawKey`s into meaningful `Key`s for your program.
+-}
+type alias KeyParser =
+    RawKey -> Maybe Key
 
 
 {-| Get the original string value of the `RawKey`.
@@ -122,14 +129,24 @@ subscriptions =
         ]
 
 
-insert : a -> List a -> List a
-insert key list =
-    key :: remove key list
+insert : KeyParser -> RawKey -> List Key -> List Key
+insert keyParser rawKey list =
+    case keyParser rawKey of
+        Just key ->
+            key :: List.filter ((/=) key) list
+
+        Nothing ->
+            list
 
 
-remove : a -> List a -> List a
-remove key list =
-    List.filter ((/=) key) list
+remove : KeyParser -> RawKey -> List Key -> List Key
+remove keyParser rawKey list =
+    case keyParser rawKey of
+        Just key ->
+            List.filter ((/=) key) list
+
+        Nothing ->
+            list
 
 
 {-| Use this (or `updateWithKeyChange`) to have the list of keys update.
@@ -138,14 +155,14 @@ _If you need to know exactly what changed just now, have a look
 at `updateWithKeyChange`._
 
 -}
-update : Msg -> List RawKey -> List RawKey
-update msg state =
+update : KeyParser -> Msg -> List Key -> List Key
+update keyParser msg state =
     case msg of
         Down key ->
-            insert key state
+            insert keyParser key state
 
         Up key ->
-            remove key state
+            remove keyParser key state
 
         ClearKeys ->
             []
@@ -155,8 +172,8 @@ update msg state =
 change that happened during the update.
 -}
 type KeyChange
-    = KeyDown RawKey
-    | KeyUp RawKey
+    = KeyDown Key
+    | KeyUp Key
 
 
 {-| This alternate update function answers the question: "Did the pressed down
@@ -164,24 +181,25 @@ keys in fact change just now?"
 
 You might be wondering why this is a `Maybe KeyChange` &ndash; it's because
 `keydown` events happen many times per second when you hold down a key. Thus,
-not all incoming messages actually cause a change in the model.
+not all incoming messages actually cause a change in the model. Also, you will
+only get updates for the keys that match your `KeyParser`.
 
 **Note** This is provided for convenience, and may not perform well in real
 programs. If you are experiencing slowness or jittering when using
 `updateWithKeyChange`, see if the regular `update` makes it go away.
 
 -}
-updateWithKeyChange : Msg -> List RawKey -> ( List RawKey, Maybe KeyChange )
-updateWithKeyChange msg state =
+updateWithKeyChange : KeyParser -> Msg -> List Key -> ( List Key, Maybe KeyChange )
+updateWithKeyChange keyParser msg state =
     case msg of
         Down key ->
             let
                 nextState =
-                    insert key state
+                    insert keyParser key state
 
                 change =
                     if List.length nextState /= List.length state then
-                        Just (KeyDown key)
+                        Maybe.map KeyDown (keyParser key)
 
                     else
                         Nothing
@@ -191,11 +209,11 @@ updateWithKeyChange msg state =
         Up key ->
             let
                 nextState =
-                    remove key state
+                    remove keyParser key state
 
                 change =
                     if List.length nextState /= List.length state then
-                        Just (KeyUp key)
+                        Maybe.map KeyUp (keyParser key)
 
                     else
                         Nothing
@@ -225,7 +243,6 @@ updateWithKeyChange msg state =
 -}
 type Key
     = Character String
-    | Other String
     | Alt
     | AltGraph
     | CapsLock
@@ -326,15 +343,21 @@ type Key
 {-| Turn any `RawKey` into a `Key` using all of the available processing functions
 (`modifierKey`, `whitespaceKey`, etc.)
 
-**This might be slow!** If you only need e.g. arrow keys, you can use
-`anyKeyWith [ navigationKey ] key` instead.
+Use it in your config like so:
 
-Keys that don't match will be converted using `Other (rawValue key)`.
+    keyboardConfig =
+        { keyParser = Keyboard.anyKey
+        }
+
+**This might be slow!** If you only need e.g. arrow keys, you can use
+`navigationKey` instead.
+
+If the key doesn't match any of the categories, `Nothing` is returned.
 
 -}
-anyKey : RawKey -> Key
+anyKey : KeyParser
 anyKey =
-    anyKeyWith
+    oneOf
         [ characterKey
         , modifierKey
         , whitespaceKey
@@ -348,21 +371,21 @@ anyKey =
 
 
 {-| Turn any `RawKey` into a `Key` using the processing functions (`modifierKey`, `whitespaceKey`,
-etc.) provided. Keys that don't match the processing functions will be converted using `Other (rawValue key)`.
+etc.) provided. If the key doesn't match any of the categories, `Nothing` is returned.
 -}
-anyKeyWith : List (RawKey -> Maybe Key) -> RawKey -> Key
-anyKeyWith fns key =
+oneOf : List KeyParser -> KeyParser
+oneOf fns key =
     case fns of
         [] ->
-            Other (rawValue key)
+            Nothing
 
         fn :: rest ->
             case fn key of
                 Just a ->
-                    a
+                    Just a
 
                 Nothing ->
-                    anyKeyWith rest key
+                    oneOf rest key
 
 
 {-| Returns the character that was pressed.
@@ -381,9 +404,9 @@ Examples on a US layout:
 <key>Shift</key> -> Nothing
 
 -}
-characterKey : RawKey -> Maybe Key
+characterKey : KeyParser
 characterKey (RawKey value) =
-    if value /= "Up" && String.length value <= 2 then
+    if String.length value == 1 then
         Just (Character value)
 
     else
@@ -397,7 +420,7 @@ characterKey (RawKey value) =
 <key>Tab</key> -> `Nothing`
 
 -}
-modifierKey : RawKey -> Maybe Key
+modifierKey : KeyParser
 modifierKey (RawKey value) =
     case value of
         -- Modifiers
@@ -458,7 +481,7 @@ modifierKey (RawKey value) =
 <key>Alt</key> -> `Nothing`
 
 -}
-whitespaceKey : RawKey -> Maybe Key
+whitespaceKey : KeyParser
 whitespaceKey (RawKey value) =
     case value of
         -- Whitespace
@@ -485,7 +508,7 @@ whitespaceKey (RawKey value) =
 <key>A</key> -> `Nothing`
 
 -}
-navigationKey : RawKey -> Maybe Key
+navigationKey : KeyParser
 navigationKey (RawKey value) =
     case value of
         -- Navigation
@@ -536,7 +559,7 @@ navigationKey (RawKey value) =
 <key>Enter</key> -> `Nothing`
 
 -}
-editingKey : RawKey -> Maybe Key
+editingKey : KeyParser
 editingKey (RawKey value) =
     case value of
         "Backspace" ->
@@ -586,7 +609,7 @@ editingKey (RawKey value) =
 <key>6</key> -> `Nothing`
 
 -}
-functionKey : RawKey -> Maybe Key
+functionKey : KeyParser
 functionKey (RawKey value) =
     case value of
         "F1" ->
@@ -655,7 +678,7 @@ functionKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [UI keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#UI_keys).
 -}
-uiKey : RawKey -> Maybe Key
+uiKey : KeyParser
 uiKey (RawKey value) =
     case value of
         -- UI
@@ -710,7 +733,7 @@ uiKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [phone keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Phone_keys).
 -}
-phoneKey : RawKey -> Maybe Key
+phoneKey : KeyParser
 phoneKey (RawKey value) =
     case value of
         -- Phone
@@ -756,7 +779,7 @@ phoneKey (RawKey value) =
 
 {-| Converts a `RawKey` if it is one of the [media keys](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values#Media_keys).
 -}
-mediaKey : RawKey -> Maybe Key
+mediaKey : KeyParser
 mediaKey (RawKey value) =
     case value of
         -- Media
