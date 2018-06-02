@@ -173,10 +173,10 @@ remove keyParser rawKey list =
 
 This will give you all the keys I can recognize.
 
-If you encounter sluggish performance and need to optimize your program, try `updateWithParser`.
-
-If you need to know exactly what changed just now, have a look
-at `updateWithKeyChange`.
+  - If you encounter sluggish performance and need to optimize your program,
+    try [`updateWithParser`](#updateWithParser).
+  - If you need to know exactly what changed just now, have a look
+    at [`updateWithKeyChange`](#updateWithKeyChange).
 
 -}
 update : Msg -> List Key -> List Key
@@ -368,13 +368,7 @@ type Key
     | MediaTrackPrevious
 
 
-{-| This parser tries to match with all the keys I can recognize.
-
-Use it in your config like so:
-
-    keyboardConfig =
-        { keyParser = Keyboard.anyKey
-        }
+{-| This parser tries to match with all the keys I can recognize. It is used in [`update`](#update).
 
 **This might be slow!** If you only need e.g. arrow keys, you can use
 `navigationKey` instead.
