@@ -15,13 +15,14 @@ subscriptions model =
     Sub.batch
         [ Keyboard.downs KeyDown
         , Keyboard.ups KeyUp
-        , Keyboard.clears ClearKeys
+
+        --, windowBlurs ClearKeys
         ]
 
 
 main : Program () Model Msg
 main =
-    Browser.embed
+    Browser.element
         { init = \_ -> init
         , update = update
         , view = view

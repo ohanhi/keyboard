@@ -70,7 +70,7 @@ subscriptions model =
 
 main : Program () Model Msg
 main =
-    Browser.embed
+    Browser.element
         { init = init
         , update = update
         , view = view

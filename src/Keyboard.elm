@@ -7,7 +7,6 @@ module Keyboard
         , RawKey
         , anyKey
         , characterKey
-        , clears
         , downs
         , editingKey
         , functionKey
@@ -35,6 +34,29 @@ Use either this approach, or the plain subscriptions and handle the state yourse
 
 @docs Msg, subscriptions, update
 
+**Note!** If the user presses a key combination that shifts focus, such as `Alt-Tab` or `Ctrl-L`,
+some keys may get "stuck" in the keys list. One solution to this issue is to create a port subscription to the window `blur` events and clearing the entire key list from your model:
+
+    // JavaScript
+    window.onblur = function() { elmApp.ports.blurs.send({}) }
+
+    -- Elm
+    port blurs : (() -> msg) -> Sub msg
+
+    subscriptions : Sub Msg
+    subscriptions =
+        Sub.batch
+            [ Keyboard.subscriptions KeyboardMsg
+            , blurs Blur
+            ]
+
+
+    -- update
+        ...
+        Blur ->
+            { model | pressedKeys = [] }
+        ...
+
 
 ## More advanced
 
@@ -58,7 +80,7 @@ Use either this approach, or the plain subscriptions and handle the state yourse
 If you prefer to only get "the facts" and do your own handling, use these
 subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 
-@docs downs, ups, clears
+@docs downs, ups
 
 
 # Low level
@@ -72,7 +94,7 @@ subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 
 -}
 
-import Browser
+import Browser.Events
 import Dict exposing (Dict)
 import Json.Decode as Json
 
@@ -112,22 +134,14 @@ these messages before the corresponding key up message.
 -}
 downs : (RawKey -> msg) -> Sub msg
 downs toMsg =
-    Browser.onDocument "keydown" (eventKeyDecoder |> Json.map toMsg)
+    Browser.Events.onKeyDown (eventKeyDecoder |> Json.map toMsg)
 
 
 {-| Subscription for key up events.
 -}
 ups : (RawKey -> msg) -> Sub msg
 ups toMsg =
-    Browser.onDocument "keyup" (eventKeyDecoder |> Json.map toMsg)
-
-
-{-| Subscription for window blur events. In the "Msg and Update" way I use this to clear out all
-"stuck-down" keys.
--}
-clears : msg -> Sub msg
-clears msg =
-    Browser.onWindow "blur" (Json.succeed msg)
+    Browser.Events.onKeyUp (eventKeyDecoder |> Json.map toMsg)
 
 
 {-| `Keyboard`'s internal message type.
@@ -135,7 +149,6 @@ clears msg =
 type Msg
     = Down RawKey
     | Up RawKey
-    | ClearKeys
 
 
 {-| The subscriptions needed for the "Msg and Update" way.
@@ -145,7 +158,6 @@ subscriptions =
     Sub.batch
         [ downs Down
         , ups Up
-        , clears ClearKeys
         ]
 
 
@@ -196,9 +208,6 @@ updateWithParser keyParser msg state =
         Up key ->
             remove keyParser key state
 
-        ClearKeys ->
-            []
-
 
 {-| The second value `updateWithKeyChange` may return, representing the actual
 change that happened during the update.
@@ -247,9 +256,6 @@ updateWithKeyChange keyParser msg state =
                         Nothing
             in
             ( nextState, change )
-
-        ClearKeys ->
-            ( [], Nothing )
 
 
 

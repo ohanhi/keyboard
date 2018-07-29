@@ -10,7 +10,7 @@ import Style
 
 main : Program () Model Msg
 main =
-    Browser.embed
+    Browser.element
         { init = \_ -> init
         , update = update
         , view = view
@@ -39,7 +39,7 @@ update msg model =
     case msg of
         KeyboardMsg keyMsg ->
             ( { model
-                | pressedKeys = Keyboard.update Keyboard.Arrows.arrowKey keyMsg model.pressedKeys
+                | pressedKeys = Keyboard.update keyMsg model.pressedKeys
               }
             , Cmd.none
             )

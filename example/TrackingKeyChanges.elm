@@ -8,7 +8,7 @@ import Style
 
 main : Program () Model Msg
 main =
-    Browser.embed
+    Browser.element
         { init = \_ -> init
         , update = update
         , view = view
