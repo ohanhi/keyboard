@@ -1,18 +1,15 @@
 {
-    "type": "package",
-    "name": "ohanhi/keyboard",
-    "summary": "Helpers for working with keyboard inputs (ex keyboard-extra)",
-    "license": "BSD-3-Clause",
-    "version": "2.0.2",
-    "exposed-modules": [
-        "Keyboard",
-        "Keyboard.Arrows"
-    ],
-    "elm-version": "0.19.0 <= v < 0.20.0",
-    "dependencies": {
-        "elm/browser": "1.0.0 <= v < 2.0.0",
-        "elm/core": "1.0.0 <= v < 2.0.0",
-        "elm/json": "1.0.0 <= v < 2.0.0"
-    },
-    "test-dependencies": {}
+  "type": "package",
+  "name": "ohanhi/keyboard",
+  "summary": "Helpers for working with keyboard inputs (ex keyboard-extra)",
+  "license": "BSD-3-Clause",
+  "version": "1.0.0",
+  "exposed-modules": ["Keyboard", "Keyboard.Arrows"],
+  "elm-version": "0.19.0 <= v < 0.20.0",
+  "dependencies": {
+    "elm/browser": "1.0.0 <= v < 2.0.0",
+    "elm/core": "1.0.0 <= v < 2.0.0",
+    "elm/json": "1.0.0 <= v < 2.0.0"
+  },
+  "test-dependencies": {}
 }
