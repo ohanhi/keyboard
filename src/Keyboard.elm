@@ -16,6 +16,7 @@ module Keyboard
         , oneOf
         , phoneKey
         , rawValue
+        , toString
         , subscriptions
         , update
         , updateWithKeyChange
@@ -85,7 +86,7 @@ subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 
 # Low level
 
-@docs rawValue
+@docs rawValue toString
 
 
 # Keyboard keys
@@ -119,6 +120,300 @@ type alias KeyParser =
 rawValue : RawKey -> String
 rawValue (RawKey key) =
     key
+    
+    
+{-| Get string representation of Key.
+-}
+toString : Key -> String
+toString key =
+    case key of
+        Character x ->
+            x
+
+        Alt ->
+            "Alt"
+
+        AltGraph ->
+            "AltGraph"
+
+        CapsLock ->
+            "CapsLock"
+
+        Control ->
+            "Control"
+
+        Fn ->
+            "Fn"
+
+        FnLock ->
+            "FnLock"
+
+        Hyper ->
+            "Hyper"
+
+        Meta ->
+            "Meta"
+
+        NumLock ->
+            "NumLock"
+
+        ScrollLock ->
+            "ScrollLock"
+
+        Shift ->
+            "Shift"
+
+        Super ->
+            "Super"
+
+        Symbol ->
+            "Symbol"
+
+        SymbolLock ->
+            "SymbolLock"
+
+        Enter ->
+            "Enter"
+
+        Tab ->
+            "Tab"
+
+        Spacebar ->
+            "Spacebar"
+
+        ArrowDown ->
+            "ArrowDown"
+
+        ArrowLeft ->
+            "ArrowLeft"
+
+        ArrowRight ->
+            "ArrowRight"
+
+        ArrowUp ->
+            "ArrowUp"
+
+        End ->
+            "End"
+
+        Home ->
+            "Home"
+
+        PageDown ->
+            "PageDown"
+
+        PageUp ->
+            "PageUp"
+
+        Backspace ->
+            "Backspace"
+
+        Clear ->
+            "Clear"
+
+        Copy ->
+            "Copy"
+
+        CrSel ->
+            "CrSel"
+
+        Cut ->
+            "Cut"
+
+        Delete ->
+            "Delete"
+
+        EraseEof ->
+            "EraseEof"
+
+        ExSel ->
+            "ExSel"
+
+        Insert ->
+            "Insert"
+
+        Paste ->
+            "Paste"
+
+        Redo ->
+            "Redo"
+
+        Undo ->
+            "Undo"
+
+        F1 ->
+            "F1"
+
+        F2 ->
+            "F2"
+
+        F3 ->
+            "F3"
+
+        F4 ->
+            "F4"
+
+        F5 ->
+            "F5"
+
+        F6 ->
+            "F6"
+
+        F7 ->
+            "F7"
+
+        F8 ->
+            "F8"
+
+        F9 ->
+            "F9"
+
+        F10 ->
+            "F10"
+
+        F11 ->
+            "F11"
+
+        F12 ->
+            "F12"
+
+        F13 ->
+            "F13"
+
+        F14 ->
+            "F14"
+
+        F15 ->
+            "F15"
+
+        F16 ->
+            "F16"
+
+        F17 ->
+            "F17"
+
+        F18 ->
+            "F18"
+
+        F19 ->
+            "F19"
+
+        F20 ->
+            "F20"
+
+        Again ->
+            "Again"
+
+        Attn ->
+            "Attn"
+
+        Cancel ->
+            "Cancel"
+
+        ContextMenu ->
+            "ContextMenu"
+
+        Escape ->
+            "Escape"
+
+        Execute ->
+            "Execute"
+
+        Find ->
+            "Find"
+
+        Finish ->
+            "Finish"
+
+        Help ->
+            "Help"
+
+        Pause ->
+            "Pause"
+
+        Play ->
+            "Play"
+
+        Props ->
+            "Props"
+
+        Select ->
+            "Select"
+
+        ZoomIn ->
+            "ZoomIn"
+
+        ZoomOut ->
+            "ZoomOut"
+
+        AppSwitch ->
+            "AppSwitch"
+
+        Call ->
+            "Call"
+
+        Camera ->
+            "Camera"
+
+        CameraFocus ->
+            "CameraFocus"
+
+        EndCall ->
+            "EndCall"
+
+        GoBack ->
+            "GoBack"
+
+        GoHome ->
+            "GoHome"
+
+        HeadsetHook ->
+            "HeadsetHook"
+
+        LastNumberRedial ->
+            "LastNumberRedial"
+
+        Notification ->
+            "Notification"
+
+        MannerMode ->
+            "MannerMode"
+
+        VoiceDial ->
+            "VoiceDial"
+
+        ChannelDown ->
+            "ChannelDown"
+
+        ChannelUp ->
+            "ChannelUp"
+
+        MediaFastForward ->
+            "MediaFastForward"
+
+        MediaPause ->
+            "MediaPause"
+
+        MediaPlay ->
+            "MediaPlay"
+
+        MediaPlayPause ->
+            "MediaPlayPause"
+
+        MediaRecord ->
+            "MediaRecord"
+
+        MediaRewind ->
+            "MediaRewind"
+
+        MediaStop ->
+            "MediaStop"
+
+        MediaTrackNext ->
+            "MediaTrackNext"
+
+        MediaTrackPrevious ->
+            "MediaTrackPrevious"
 
 
 eventKeyDecoder : Json.Decoder RawKey
