@@ -95,7 +95,6 @@ subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 -}
 
 import Browser.Events
-import Dict exposing (Dict)
 import Json.Decode as Json
 
 
@@ -256,21 +255,6 @@ updateWithKeyChange keyParser msg state =
                         Nothing
             in
             ( nextState, change )
-
-
-
-{- A `Json.Decoder` for grabbing `event.keyCode` and turning it into a `Key`
-
-       import Json.Decode as Json
-
-       onKey : (Key -> msg) -> Attribute msg
-       onKey tagger =
-           on "keydown" (Json.map tagger targetKey)
-
-   targetKey : Json.Decoder Key
-   targetKey =
-     Json.map fromCode (Json.field "keyCode" Json.int)
--}
 
 
 {-| These are all the keys that have names in `Keyboard`.
