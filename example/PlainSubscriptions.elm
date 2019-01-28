@@ -1,4 +1,4 @@
-module PlainSubscriptions exposing (Model, Msg(..), init, keysView, main, subscriptions, update, view)
+module PlainSubscriptions exposing (main)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
@@ -54,10 +54,10 @@ update msg model =
         event =
             case msg of
                 KeyUp key ->
-                    "↥ up: " ++ Debug.toString (Keyboard.anyKey key)
+                    "↥ up: " ++ Debug.toString (Keyboard.anyKeyOriginal key)
 
                 KeyDown key ->
-                    "↧ down: " ++ Debug.toString (Keyboard.anyKey key)
+                    "↧ down: " ++ Debug.toString (Keyboard.anyKeyOriginal key)
 
                 ClearKeys ->
                     "↯ Clear!"

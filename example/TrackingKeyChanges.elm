@@ -1,4 +1,4 @@
-module TrackingKeyChanges exposing (Model, Msg(..), init, keysView, main, subscriptions, update, view)
+module TrackingKeyChanges exposing (main)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)
@@ -39,7 +39,7 @@ update msg model =
         KeyboardMsg keyMsg ->
             let
                 ( pressedKeys, maybeKeyChange ) =
-                    Keyboard.updateWithKeyChange Keyboard.anyKey keyMsg model.pressedKeys
+                    Keyboard.updateWithKeyChange Keyboard.anyKeyOriginal keyMsg model.pressedKeys
 
                 keyChanges =
                     case maybeKeyChange of

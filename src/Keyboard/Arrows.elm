@@ -22,11 +22,11 @@ type alias Arrows =
     { x : Int, y : Int }
 
 
-{-| A key parser for just the Arrow keys and W, A, S, D.
+{-| A key parser for just the Arrow keys and W, A, S, D. They are always uppercase.
 
 [ArrowLeft] -> `Just ArrowLeft`
 
-[A] -> `Character "a"`
+[A] -> `Character "A"`
 
 [B] -> `Nothing`
 
@@ -61,11 +61,11 @@ arrowKey rawKey =
 
         other ->
             let
-                lower =
-                    String.toLower other
+                upper =
+                    String.toUpper other
             in
-            if lower == "w" || lower == "a" || lower == "s" || lower == "d" then
-                Just (Character other)
+            if upper == "W" || upper == "A" || upper == "S" || upper == "D" then
+                Just (Character upper)
 
             else
                 Nothing
@@ -118,15 +118,16 @@ arrows keys =
 wasd : List Key -> Arrows
 wasd keys =
     let
-        toInt char1 char2 =
-            boolToInt
-                (List.member (Character char1) keys || List.member (Character char2) keys)
+        toInt char =
+            keys
+                |> List.member (Character char)
+                |> boolToInt
 
         x =
-            toInt "D" "d" - toInt "A" "a"
+            toInt "D" - toInt "A"
 
         y =
-            toInt "W" "w" - toInt "S" "s"
+            toInt "W" - toInt "S"
     in
     { x = x, y = y }
 

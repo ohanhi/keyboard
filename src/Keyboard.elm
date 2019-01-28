@@ -2,7 +2,7 @@ module Keyboard exposing
     ( Msg, subscriptions, update
     , updateWithParser, KeyChange(..), updateWithKeyChange
     , RawKey, KeyParser
-    , anyKey, characterKey, modifierKey, whitespaceKey, navigationKey, editingKey, functionKey, phoneKey, mediaKey
+    , anyKeyUpper, anyKeyOriginal, characterKeyUpper, characterKeyOriginal, modifierKey, whitespaceKey, navigationKey, editingKey, functionKey, phoneKey, mediaKey
     , oneOf
     , downs, ups
     , rawValue, eventKeyDecoder
@@ -52,7 +52,7 @@ some keys may get "stuck" in the keys list. One solution to this issue is to cre
 
 @docs RawKey, KeyParser
 
-@docs anyKey, characterKey, modifierKey, whitespaceKey, navigationKey, editingKey, functionKey, phoneKey, mediaKey
+@docs anyKeyUpper, anyKeyOriginal, characterKeyUpper, characterKeyOriginal, modifierKey, whitespaceKey, navigationKey, editingKey, functionKey, phoneKey, mediaKey
 
 
 ## Combining key parsers
@@ -183,7 +183,7 @@ This will give you all the keys I can recognize.
 -}
 update : Msg -> List Key -> List Key
 update =
-    updateWithParser anyKey
+    updateWithParser anyKeyUpper
 
 
 {-| A more advanced version of `update`. Provide it with a smaller `KeyParser` than `anyKey` and
@@ -349,20 +349,32 @@ type Key
     | MediaTrackPrevious
 
 
-{-| This parser tries to match with all the keys I can recognize. It is used in [`update`](#update).
-
-**This might be slow!** If you only need e.g. arrow keys, you can use
-`navigationKey` instead.
+{-| This parser tries to match with all the keys I can recognize. `Spacebar` is used for the space
+key and `Character`s are all uppercase. This parser is used in [`update`](#update).
 
 If the key doesn't match any of the categories, `Nothing` is returned.
 
+**Note:** If you experience performance issues, you can use [`oneOf`](#oneOf) with some specific parsers.
+
 -}
-anyKey : KeyParser
-anyKey =
+anyKeyUpper : KeyParser
+anyKeyUpper =
+    anyKeyWith characterKeyUpper
+
+
+{-| The same as [`anyKeyUpper`](#anyKeyUpper), but with `Character`s in the original case.
+-}
+anyKeyOriginal : KeyParser
+anyKeyOriginal =
+    anyKeyWith characterKeyOriginal
+
+
+anyKeyWith : KeyParser -> KeyParser
+anyKeyWith charParser =
     oneOf
-        [ characterKey
+        [ whitespaceKey
+        , charParser
         , modifierKey
-        , whitespaceKey
         , navigationKey
         , editingKey
         , functionKey
@@ -390,7 +402,32 @@ oneOf fns key =
                     oneOf rest key
 
 
-{-| Returns the character that was pressed.
+{-| Returns the character that was pressed, **always uppercase**.
+
+**NOTE** There is no reasonable way of actually telling if a certain key is a character or not.
+For now at least, consider this a Western language focused "best guess".
+
+Examples on a US layout:
+
+[A] -> `Just (Character "A")`
+
+[Shift] + [A] -> `Just (Character "A")`
+
+[Shift] + [1] -> `Just (Character "!")`
+
+[Shift] -> `Nothing`
+
+-}
+characterKeyUpper : KeyParser
+characterKeyUpper (RawKey value) =
+    if String.length value == 1 then
+        Just (Character (String.toUpper value))
+
+    else
+        Nothing
+
+
+{-| Returns the character that was pressed, **in the original case**.
 
 **NOTE** There is no reasonable way of actually telling if a certain key is a character or not.
 For now at least, consider this a Western language focused "best guess".
@@ -406,8 +443,8 @@ Examples on a US layout:
 [Shift] -> `Nothing`
 
 -}
-characterKey : KeyParser
-characterKey (RawKey value) =
+characterKeyOriginal : KeyParser
+characterKeyOriginal (RawKey value) =
     if String.length value == 1 then
         Just (Character value)
 
