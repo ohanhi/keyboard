@@ -7,6 +7,13 @@ Install with
 elm install ohanhi/keyboard
 ```
 
+### Upgrading from 1.x to 2.x?
+
+[Read this](https://github.com/ohanhi/keyboard/blob/master/upgrade-2.x.md)
+
+
+## Usage
+
 You can use this package in two ways:
 
 1. The "Msg and Update" way, which has some setting up to do but has a bunch of ways to help you get the information you need.
