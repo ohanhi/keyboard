@@ -1,8 +1,13 @@
-# Keyboard
+# Keyboard [![Build Status](https://travis-ci.org/ohanhi/keyboard.svg?branch=master)](https://travis-ci.org/ohanhi/keyboard)
 
 Nice keyboard inputs in Elm.
 
-You can use `ohanhi/keyboard` in two ways:
+Install with
+```
+elm install ohanhi/keyboard
+```
+
+You can use this package in two ways:
 
 1. The "Msg and Update" way, which has some setting up to do but has a bunch of ways to help you get the information you need.
 2. The "Plain Subscriptions" way, where you get subscriptions for keys' down and up events, and handle the rest on your own.
