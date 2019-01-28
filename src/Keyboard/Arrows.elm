@@ -1,13 +1,4 @@
-module Keyboard.Arrows
-    exposing
-        ( Arrows
-        , Direction(..)
-        , arrowKey
-        , arrows
-        , arrowsDirection
-        , wasd
-        , wasdDirection
-        )
+module Keyboard.Arrows exposing (Arrows, arrows, wasd, Direction(..), arrowsDirection, wasdDirection, arrowKey)
 
 {-| Arrow keys and WASD get special treatment using the functions in this module. This is particularly useful for games.
 

@@ -1,4 +1,4 @@
-module TrackingKeyChanges exposing (..)
+module TrackingKeyChanges exposing (Model, Msg(..), init, keysView, main, subscriptions, update, view)
 
 import Browser
 import Html exposing (Html, div, li, p, text, ul)

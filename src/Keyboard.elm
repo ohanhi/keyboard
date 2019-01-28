@@ -1,29 +1,13 @@
-module Keyboard
-    exposing
-        ( Key(..)
-        , KeyChange(..)
-        , KeyParser
-        , Msg
-        , RawKey
-        , anyKey
-        , characterKey
-        , downs
-        , editingKey
-        , eventKeyDecoder
-        , functionKey
-        , mediaKey
-        , modifierKey
-        , navigationKey
-        , oneOf
-        , phoneKey
-        , rawValue
-        , subscriptions
-        , update
-        , updateWithKeyChange
-        , updateWithParser
-        , ups
-        , whitespaceKey
-        )
+module Keyboard exposing
+    ( Msg, subscriptions, update
+    , updateWithParser, KeyChange(..), updateWithKeyChange
+    , RawKey, KeyParser
+    , anyKey, characterKey, modifierKey, whitespaceKey, navigationKey, editingKey, functionKey, phoneKey, mediaKey
+    , oneOf
+    , downs, ups
+    , rawValue, eventKeyDecoder
+    , Key(..)
+    )
 
 {-| Convenience helpers for working with keyboard inputs.
 
@@ -86,7 +70,7 @@ subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 
 # Low level
 
-@docs rawValue
+@docs rawValue, eventKeyDecoder
 
 
 # Keyboard keys

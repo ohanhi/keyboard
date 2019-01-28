@@ -1,4 +1,4 @@
-module VisualArrows exposing (..)
+module VisualArrows exposing (Model, Msg(..), directionToAngle, directionView, init, main, subscriptions, update, view)
 
 import Browser
 import Html exposing (Html, div, p, text)
