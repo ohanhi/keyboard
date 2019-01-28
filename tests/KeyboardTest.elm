@@ -35,6 +35,14 @@ suite =
         , describe "Non-ASCII characters" <|
             List.map characterUpperTest nonAscii
                 ++ List.map (Tuple.first >> characterOriginalTest) nonAscii
+        , describe "Space key"
+            [ parserTest "Gives `Spacebar` with anyKeyUpper"
+                { parser = Keyboard.anyKeyUpper, raw = " ", expected = Just Keyboard.Spacebar }
+            , parserTest "Gives `Spacebar` with anyKeyOriginal"
+                { parser = Keyboard.anyKeyOriginal, raw = " ", expected = Just Keyboard.Spacebar }
+            , parserTest "Gives `Character \" \"` with just a character parser"
+                { parser = Keyboard.characterKeyOriginal, raw = " ", expected = Just (Character " ") }
+            ]
         ]
 
 
@@ -53,28 +61,35 @@ nonAscii =
     ]
 
 
-characterUpperTest : ( String, String ) -> Test
-characterUpperTest ( original, expected ) =
-    stringToJson original
+parserTest : String -> { parser : Keyboard.KeyParser, raw : String, expected : Maybe Keyboard.Key } -> Test
+parserTest description { parser, raw, expected } =
+    raw
+        |> stringToJson
         |> (\{ json } _ ->
                 decodeString Keyboard.eventKeyDecoder json
                     |> Result.toMaybe
-                    |> Maybe.andThen Keyboard.characterKeyUpper
-                    |> Expect.equal (Just (Character expected))
+                    |> Maybe.andThen parser
+                    |> Expect.equal expected
            )
-        |> test ("Uppercased " ++ original)
+        |> test description
+
+
+characterUpperTest : ( String, String ) -> Test
+characterUpperTest ( original, expected ) =
+    parserTest ("Upper " ++ original)
+        { parser = Keyboard.characterKeyUpper
+        , raw = original
+        , expected = Just (Character expected)
+        }
 
 
 characterOriginalTest : String -> Test
 characterOriginalTest original =
-    stringToJson original
-        |> (\{ json } _ ->
-                decodeString Keyboard.eventKeyDecoder json
-                    |> Result.toMaybe
-                    |> Maybe.andThen Keyboard.characterKeyOriginal
-                    |> Expect.equal (Just (Character original))
-           )
-        |> test ("With original case " ++ original)
+    parserTest ("Original " ++ original)
+        { parser = Keyboard.characterKeyOriginal
+        , raw = original
+        , expected = Just (Character original)
+        }
 
 
 charRawKey : Fuzzer ( String, Maybe RawKey )
