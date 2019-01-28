@@ -9,6 +9,7 @@ module Keyboard
         , characterKey
         , downs
         , editingKey
+        , eventKeyDecoder
         , functionKey
         , mediaKey
         , modifierKey
@@ -121,6 +122,12 @@ rawValue (RawKey key) =
     key
 
 
+{-| Use this with Html keyboard events to retrieve a `RawKey` representing the key
+which triggered the event.
+
+    Html.Events.on "keydown" eventKeyDecoder
+
+-}
 eventKeyDecoder : Json.Decoder RawKey
 eventKeyDecoder =
     Json.field "key" (Json.string |> Json.map RawKey)
