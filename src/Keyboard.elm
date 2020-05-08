@@ -75,7 +75,7 @@ subscriptions. Otherwise, you may be more comfortable with the Msg and Update.
 
 # Keyboard keys
 
-@docs Key
+@docs Key, Keys
 
 -}
 
@@ -151,7 +151,7 @@ subscriptions =
         ]
 
 
-insert : KeyParser -> RawKey -> List Key -> List Key
+insert : KeyParser -> RawKey -> Keys -> Keys
 insert keyParser rawKey list =
     case keyParser rawKey of
         Just key ->
@@ -161,7 +161,7 @@ insert keyParser rawKey list =
             list
 
 
-remove : KeyParser -> RawKey -> List Key -> List Key
+remove : KeyParser -> RawKey -> Keys -> Keys
 remove keyParser rawKey list =
     case keyParser rawKey of
         Just key ->
@@ -181,7 +181,7 @@ This will give you all the keys I can recognize.
     at [`updateWithKeyChange`](#updateWithKeyChange).
 
 -}
-update : Msg -> List Key -> List Key
+update : Msg -> Keys -> Keys
 update =
     updateWithParser anyKeyUpper
 
@@ -189,7 +189,7 @@ update =
 {-| A more advanced version of `update`. Provide it with a smaller `KeyParser` than `anyKey` and
 it will perform a little bit faster.
 -}
-updateWithParser : KeyParser -> Msg -> List Key -> List Key
+updateWithParser : KeyParser -> Msg -> Keys -> Keys
 updateWithParser keyParser msg state =
     case msg of
         Down key ->
@@ -216,7 +216,7 @@ not all incoming messages actually cause a change in the model. Also, you will
 only get updates for the keys that match your `KeyParser`.
 
 -}
-updateWithKeyChange : KeyParser -> Msg -> List Key -> ( List Key, Maybe KeyChange )
+updateWithKeyChange : KeyParser -> Msg -> Keys -> ( List Key, Maybe KeyChange )
 updateWithKeyChange keyParser msg state =
     case msg of
         Down key ->
@@ -247,6 +247,14 @@ updateWithKeyChange keyParser msg state =
             in
             ( nextState, change )
 
+{-| While a `Set key` would do the job of making invalid states (like the same
+key pressed twice) irrepresentable, there are two caveats:
+
+First, for some use-cases, the order of the keys pressed is relevant. A set does
+not capture this information. Second, it would be more complex to implement,
+because the `Key` type is not comparable.
+-}
+type alias Keys = List Key
 
 {-| These are all the keys that have names in `Keyboard`.
 -}
