@@ -9,6 +9,7 @@ import Style
 
 {- Subscribing to keyboard events without the whole model-update -thing. -}
 
+-- port windowBlurs: (() -> msg) -> Sub msg
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -59,8 +60,8 @@ update msg model =
                 KeyDown key ->
                     "↧ down: " ++ Debug.toString (Keyboard.anyKeyOriginal key)
 
-                ClearKeys ->
-                    "↯ Clear!"
+                -- ClearKeys ->
+                --     "↯ Clear!"
     in
     ( { model | events = event :: model.events }
     , Cmd.none

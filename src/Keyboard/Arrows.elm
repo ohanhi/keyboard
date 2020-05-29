@@ -6,7 +6,7 @@ module Keyboard.Arrows exposing (Arrows, arrows, wasd, Direction(..), arrowsDire
 
 -}
 
-import Keyboard exposing (Key(..), KeyParser, RawKey)
+import Keyboard exposing (Key(..), KeyParser)
 
 
 {-| Record type used for `arrows` and `wasd`.
@@ -19,7 +19,9 @@ For example:
 
 -}
 type alias Arrows =
-    { x : Int, y : Int }
+    { x : Int
+    , y : Int
+    }
 
 
 {-| A key parser for just the Arrow keys and W, A, S, D. They are always uppercase.

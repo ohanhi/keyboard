@@ -7,11 +7,6 @@ Install with
 elm install ohanhi/keyboard
 ```
 
-### Upgrading from 1.x to 2.x?
-
-[Read this](https://github.com/ohanhi/keyboard/blob/master/upgrade-2.x.md)
-
-
 ## Usage
 
 You can use this package in two ways:
@@ -117,6 +112,37 @@ Have fun! :)
 
 **PS.** The [Tracking Key Changes example](https://github.com/ohanhi/keyboard/blob/master/example/TrackingKeyChanges.elm) example shows how to use `updateWithKeyChange` to find out exactly which key was pressed down / released on that update cycle.
 
+## Stuck down keys
+
+If the user presses a key combination that shifts focus, such as `Alt-Tab` or `Ctrl-L`,
+some keys may get "stuck" in the keys list. One solution to this issue is to create a port subscription to the window `blur` events and clearing the entire key list from your model:
+
+JavaScript
+
+```js
+window.onblur = function() { elmApp.ports.blurs.send({}) }
+```
+
+Elm
+
+```elm
+port blurs : (() -> msg) -> Sub msg
+
+subscriptions : Sub Msg
+subscriptions =
+    Sub.batch
+        [ Keyboard.subscriptions KeyboardMsg
+        , blurs Blur
+        ]
+
+
+-- update
+    ...
+    Blur ->
+        { model | pressedKeys = [] }
+    ...
+```
+
 
 ## Plain Subscriptions
 
@@ -132,7 +158,6 @@ import Keyboard exposing (RawKey)
 type Msg
     = KeyDown RawKey
     | KeyUp RawKey
-    | ClearKeys
     -- ...
 
 
@@ -141,7 +166,6 @@ subscriptions model =
     Sub.batch
         [ Keyboard.downs KeyDown
         , Keyboard.ups KeyUp
-        , Keyboard.clears ClearKeys
         -- ...
         ]
 ```
